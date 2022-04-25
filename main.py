@@ -4,6 +4,7 @@ Kinderdrome Simulation GUI
 import arcade
 import random
 from mathutils import *
+from copy import deepcopy
 
 
 
@@ -11,27 +12,67 @@ from mathutils import *
 SCREEN_TITLE = "The Kinderdrome"
 SCREEN_HEIGHT = 720
 SCREEN_WIDTH = 1280
+MARGIN = 0
 NUM_KINDER = 25
+SCALING = 1
 
 class Kinder (arcade.Sprite):
     """Kinder entity class"""
-    def __init__(self, spritefile = "images/dummy.png", scaling = 1):
+    def __init__(self, spritefile = "images/dummy.png", scaling = SCALING):
         super().__init__(spritefile, scaling)
+        self.left = MARGIN + (SCREEN_WIDTH - 2 * MARGIN - self.width - 1) * random.random()
+        self.bottom = MARGIN + (SCREEN_HEIGHT - 2 * MARGIN - self.height - 1) * random.random()
         self.velocity = rand_direction()
+        self.traj_vel = deepcopy(self.velocity)
+        self.traj_dir = vel2dir(self.traj_vel)
+        self.speed = 2
+        self.t = 0
+        self.run_timer = 0
+        self.perlin = PerlinNoise(octaves=self.speed/2, seed=random.randint(1,1000))
+        self.set_hit_box([(20,20), (-20,20), (-20,-20), (20,-20)])
 
     def update(self):
         """Update the position of the sprite"""
         super().update()
 
-        if self.isOut(): # move to center if the edge is hit
-            self.center_x, self.center_y = SCREEN_WIDTH//2, SCREEN_HEIGHT//2
+        self.draw_hit_box(arcade.color.RED, 15)
 
-        curr_direction = vel2dir(self.velocity)
-        self.velocity = rand_direction(curr_direction - 10, curr_direction + 10, 'uniform')
+        if self.isOut('x'):                                                 # If out of xbounds
+            self.run_timer = 5                                              # run for 3 frames
+            self.velocity[0] = - self.velocity[0]                           # negate horizontal velocity
+            self.traj_vel[0] = - self.traj_vel[0]                           # and horizontal trajectory
+        if self.isOut('y'):                                                 # Same for ybounds
+            self.run_timer = 5
+            self.velocity[1] = - self.velocity[1]
+            self.traj_vel[1] = - self.traj_vel[1]
 
-    def isOut(self):
-        return self.bottom < 0 or self.top > SCREEN_HEIGHT or self.left < 0 or self.right > SCREEN_WIDTH
+        if self.run_timer == 0:                                             # If not running from boundaries, move normally
+            unit_velocity = dir2vel(self.traj_dir + next(self.noise()) * 360) # get new direction
+            speed_velocity = [v*self.speed for v in unit_velocity]  # scale it based on self.speed
+            self.velocity = speed_velocity                                  # set velocity
+        else:                                                               # If still running, continue running
+            self.run_timer -= 1
 
+    def isOut(self, mode = None):
+        if mode == 'x':
+            return (self.left < MARGIN or self.right > (SCREEN_WIDTH - MARGIN))
+        if mode == 'y':
+            return (self.bottom < MARGIN or self.top > (SCREEN_HEIGHT - MARGIN))
+        else:
+            return (self.bottom < MARGIN or self.top > (SCREEN_HEIGHT - MARGIN) or self.left < MARGIN or self.right > (SCREEN_WIDTH - MARGIN))
+        
+    @property
+    def traj_dir(self):
+        return vel2dir(self.traj_vel)
+
+    @traj_dir.setter
+    def traj_dir(self, direction):
+        return direction
+
+    def noise(self):
+        self.t += 1/200 * self.speed
+        yield self.perlin(self.t)
+    
 class Sim(arcade.Window):
     """
     Main Simulation Class
@@ -50,8 +91,7 @@ class Sim(arcade.Window):
         
         for n in range(NUM_KINDER):
             kinder = Kinder()
-            kinder.center_x = SCREEN_WIDTH * random.random() 
-            kinder.center_y = SCREEN_HEIGHT * random.random()
+            
             self.kinder_list.append(kinder)
         
 

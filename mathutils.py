@@ -2,7 +2,7 @@ import random
 from math import cos, sin, radians, atan, degrees
 from perlin_noise import PerlinNoise
 
-def rand_direction(start: float = 0.0, stop: float = 360.0, mode: str = 'uniform', t: float = 0):
+def rand_direction(start: float = 0.0, stop: float = 360.0, mode: str = 'uniform', t: float = 0) -> list[float, float]:
         """Random direction generator: returns random unit vector in rectangular form
         with an argument between the stop and start values (in degrees)
         
@@ -38,11 +38,12 @@ def rand_direction(start: float = 0.0, stop: float = 360.0, mode: str = 'uniform
         else:
             raise Exception(f"Invalid mode: '{mode}'")
 
-        vector = (round(cos(radians(arg)), 2), round(sin(radians(arg)),2)) # generate rectangular form
+        vector = [round(cos(radians(arg)), 2), round(sin(radians(arg)),2)] # generate rectangular form
 
         return vector
 
-def vel2dir(velocity):
+def vel2dir(velocity: tuple[float, float] = (1,0)) -> float:
+    """Get agrument in degrees of rectangular velocity vector"""
     if velocity[0] != 0:
         grad = velocity[1]/velocity[0]
         arg = degrees(atan(grad))
@@ -51,6 +52,14 @@ def vel2dir(velocity):
         return arg
     else:
         return 90 * (2+velocity[1])
+
+def dir2vel(direction: float = 0) -> list[float, float]:
+    """Get rectangular unit vector from angle in degrees"""
+    return [round(cos(radians(direction)),2), round(sin(radians(direction)),2)]
+
+def opposite(velocity: list[float]) -> list[float]:
+    """Negates all elements of a list"""
+    return [-v for v in velocity]
 
 if __name__ == '__main__':
     ### Testing rand_direction()
