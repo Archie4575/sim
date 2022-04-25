@@ -90,7 +90,7 @@ class Sim(arcade.Window):
         arcade.set_background_color( (244, 235, 208) ) #F4EBD0 (Off-White)
         
         for n in range(NUM_KINDER):
-            kinder = Kinder()
+            kinder = Kinder("images/kinder/timmy.png")
             
             self.kinder_list.append(kinder)
         
