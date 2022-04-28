@@ -15,6 +15,7 @@ SCREEN_WIDTH = 1280
 MARGIN = 0
 NUM_KINDER = 25
 SCALING = 1
+FPS = 60
 MODES = {
     "block-surplus": 0,
     "block-saturation": 1,
@@ -43,10 +44,9 @@ class Kinder (arcade.Sprite):
         self.perlin = PerlinNoise(octaves=self.speed/2, seed=random.randint(1,1000))
         self.set_hit_box([(20,20), (-20,20), (-20,-20), (20,-20)])
 
-    def update(self):
+    def update(self, delta_time):
         """Update the position of the sprite"""
-        
-        self.draw_hit_box(arcade.color.RED, 15)
+        print(delta_time)
 
         if self.isOut('x'):                                                 # If out of xbounds
             self.run_timer = 5                                              # run for 3 frames
@@ -110,22 +110,24 @@ class Sim(arcade.Window):
         
 
     def on_update(self, delta_time):
-        self.kinder_list.update()
+        for kinder in self.kinder_list:
+            kinder.update(delta_time)
 
     def on_draw(self):
         arcade.start_render()
         self.kinder_list.draw()
 
     def get_kinder_sprites(self):
-        sprite_dir = "images/kinder"
+        main_dir = os.path.split(__file__)[0]
+        sprite_dir = os.path.join(main_dir, "images/kinder")
         try:
             images = os.listdir(sprite_dir)
         except FileNotFoundError as err:
             raise FileNotFoundError(f"Could not find sprite folder: '{sprite_dir}'. \
                 Are you running from the right directory?")
 
-        # filter for .png files
-        images = [image for image in images if os.path.splitext(image)[1] in ['.jpg', '.png']]
+        # filter for .png or .jpg files
+        images = [image for image in images if os.path.splitext(image)[1] in ['.jpg', '.jpeg', '.png']]
         if len(images) == 0:
             raise Exception("No kinder sprite images found in ./images/kinder")
         # form full paths
@@ -137,6 +139,7 @@ class Sim(arcade.Window):
 def main():
     sim = Sim()
     sim.setup()
+    sim.set_update_rate(1/FPS)
     arcade.run()
 
 if __name__ == "__main__":
