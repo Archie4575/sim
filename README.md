@@ -1,14 +1,52 @@
-# sim
+The Kinderdrome
+===============
+Author: Archer Fabling \[20885436\]  
+Contact:  <20885436@student.curtin.edu.au>  
+GitHub: https://github.com/Archie4575
 
 ## Synopsis
 
-Final Assignment for COMP1005.
-A simulation of
+Final Assignment for COMP1005:
+A simulation of kindergarten kids running around a classroom and picking up blocks.  
+The simulation has several modes:  
+Block Surplus - Initial mode where kindergarteners collect blocks  
+Block Saturation - Kindergarteners start to contest ecah other and snatching blocks. Triggered when all blocks have been collected.  
+Nap Time - All kindergarteners drop their blocks find a place to rest.  
+
+## Installation
+
+Clone the repository:
+>`git clone http://github.com/Archie4575/sim`  
+>`cd sim`  
+
+Install the packages on Linux and Windwos:  
+>`python3 -m pip install -r requirements.txt`  
+
+Or if using MacOS:  
+>`python3 -m pip install -r requirements_macos.txt`  
+
+## Usage
+
+Run the simulation:
+>`python3 main.py`
+
+### Options:  
+
+**work in progress*
+
 
 ## Content
 
-README - read me file
-.gitignore - files for git to ignore
+README.md - README file  
+.gitignore - python project gitignore template  
+requiremetns.txt - pip package dependencies for Linux and Windows  
+requirements_macos.txt - pip package dependencies for MacOS (includes PyObjC)  
+main.py - main simulation  
+mathutils.py - vector functions  
+images/ - image resources  
+- checkers.png - black and white checkered grid 
+- dummy.png - 40x40 dummy sprite  
+- kinder/ - sprite image files  
 
 ## Dependencies
 
@@ -22,5 +60,6 @@ README - read me file
 0.2.2 - 25/04/2022 - Added timmy.png and images/kinder sub-directory  
 0.2.3 - 25/04/2022 - Added requirements.txt file  
 0.3.0 - 28/04/2022 - Implemented extensible set of kinder sprites  
-0.3.1 - 28/04/2022 - Set FPS and made spritefile paths absolute
-0.3.2 - 28/04/2022 - Docstrings and Python 3.6 compatability
+0.3.1 - 28/04/2022 - Set FPS and made spritefile paths absolute  
+0.3.2 - 28/04/2022 - Docstrings and Python 3.6 compatability  
+0.3.3 - 29/04/2022 - Updated README.md
