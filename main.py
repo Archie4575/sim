@@ -3,9 +3,9 @@ Kinderdrome Simulation GUI
 """
 import arcade
 import random
+import os
 from mathutils import *
 from copy import deepcopy
-
 
 
 # Window Constants
@@ -15,9 +15,21 @@ SCREEN_WIDTH = 1280
 MARGIN = 0
 NUM_KINDER = 25
 SCALING = 1
+MODES = {
+    "block-surplus": 0,
+    "block-saturation": 1,
+}
+
+
 
 class Kinder (arcade.Sprite):
     """Kinder entity class"""
+    mode = 0
+    """modes:
+        0 - Block surplus
+        1 - Block saturation
+        2 - Naptime"""
+
     def __init__(self, spritefile = "images/dummy.png", scaling = SCALING):
         super().__init__(spritefile, scaling)
         self.left = MARGIN + (SCREEN_WIDTH - 2 * MARGIN - self.width - 1) * random.random()
@@ -33,8 +45,7 @@ class Kinder (arcade.Sprite):
 
     def update(self):
         """Update the position of the sprite"""
-        super().update()
-
+        
         self.draw_hit_box(arcade.color.RED, 15)
 
         if self.isOut('x'):                                                 # If out of xbounds
@@ -52,6 +63,9 @@ class Kinder (arcade.Sprite):
             self.velocity = speed_velocity                                  # set velocity
         else:                                                               # If still running, continue running
             self.run_timer -= 1
+
+        super().update()
+
 
     def isOut(self, mode = None):
         if mode == 'x':
@@ -83,15 +97,15 @@ class Sim(arcade.Window):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE, resizable = False)
 
         self.kinder_list = arcade.SpriteList()
-
+        self.block_list = arcade.SpriteList()
 
 
     def setup(self):
         arcade.set_background_color( (244, 235, 208) ) #F4EBD0 (Off-White)
         
+        sprites = self.get_kinder_sprites()
         for n in range(NUM_KINDER):
-            kinder = Kinder("images/kinder/timmy.png")
-            
+            kinder = Kinder(random.choice(sprites))
             self.kinder_list.append(kinder)
         
 
@@ -101,6 +115,23 @@ class Sim(arcade.Window):
     def on_draw(self):
         arcade.start_render()
         self.kinder_list.draw()
+
+    def get_kinder_sprites(self):
+        sprite_dir = "images/kinder"
+        try:
+            images = os.listdir(sprite_dir)
+        except FileNotFoundError as err:
+            raise FileNotFoundError(f"Could not find sprite folder: '{sprite_dir}'. \
+                Are you running from the right directory?")
+
+        # filter for .png files
+        images = [image for image in images if os.path.splitext(image)[1] in ['.jpg', '.png']]
+        if len(images) == 0:
+            raise Exception("No kinder sprite images found in ./images/kinder")
+        # form full paths
+        paths = [os.path.join(sprite_dir, image) for image in images]
+
+        return paths
 
 
 def main():

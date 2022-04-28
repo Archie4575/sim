@@ -19,5 +19,6 @@ README - read me file
 0.1.1 - 25/04/2022 - Updated the README  
 0.2.0 - 25/04/2022 - Implemented perlin walk and boundary bouncing  
 0.2.1 - 25/04/2022 - README.md formatting  
-0.2.2 - 25/04/2022 - Added timmy.png and images/kinder sub-directory
-0.2.3 - 25/04/2002 - Added requirements.txt file
+0.2.2 - 25/04/2022 - Added timmy.png and images/kinder sub-directory  
+0.2.3 - 25/04/2022 - Added requirements.txt file  
+0.3.0 - 28/04/2022 - Implemented extensible set of kinder sprites  
