@@ -17,7 +17,7 @@ SCREEN_TITLE = "The Kinderdrome"
 SCREEN_HEIGHT = 720
 SCREEN_WIDTH = 1280
 MARGIN = 2
-NUM_KINDER = 25
+NUM_KINDER = 2
 SCALING = 1
 FPS = 60
 MODES = {
@@ -26,7 +26,69 @@ MODES = {
     "nap_time": 2,
 }
 
+class Grid (arcade.Sprite):
+    """Grid class. A static background sprite that has a matrix of cells containing the Kinder objects currently
+    in said grid area. i.e. If two Kinder objects has center_x and center_y coordinates that lie within the same
+    grid area, their objects will be in the same matrix cell. This is useful for initialising a contest for 
+    mode 1 (block saturation).
+    
+    :param int rows: numbers of rows
+    :param int columns: number of columns
+    
+    Attributes:
+        :matrix: matrix of cells containing Kinder objects
+        :division: side length of one grid square in pixels
+    """
+    def __init__(self, rows: int = 9, columns: int = 12):
+        """Constructor"""
+        spritefile = os.path.join(os.path.split(__file__)[0], 'images/checkers.png') # Form absolute path
+        scaling = 1
+        super().__init__(spritefile, scaling)
 
+        self.left = 0
+        self.bottom = 0
+
+        self.rows = rows
+        self.columns = columns
+        self.division = self.width // self.rows # Width of a square
+
+        self.matrix = [[[] for c in range(columns)] for r in range(rows)] # Initialise empty matrix
+
+    def update(self):
+        """Checks for two kinder objects in the same cell and prints if a contest is found.
+        Subsequently clears the matrix for the next update."""
+        for r, row in enumerate(self.matrix):
+            for c, cell in enumerate(row):
+                if cell.__len__() > 1:
+                    print(f"Contest in cell: [{r},{c}]")
+        self.clear()
+
+    def print_matrix(self):
+        """Prints the grid matrix"""
+        for row in self.matrix[::-1]:
+            for c in row:
+                print("[", end='')
+                for i in c:
+                    print(i, " ", end='')
+                print("]", end='')
+            print()
+        return
+    
+    def get_grid_pos(self, sprite: arcade.Sprite):
+        """Returns grid area coordinated. Grid coordinates are of the form [row, column], 
+        with grid cooridinate [0,0] being the bottom left-most grid square."""
+        r = int(sprite.center_y // self.division)
+        c = int(sprite.center_x // self.division)
+
+        return [r,c]
+
+    def clear(self):
+        """Clears the matrix"""
+        self.matrix = [[[] for c in range(self.columns)] for r in range(self.rows)]
+
+
+
+        
 
 class Kinder (arcade.Sprite):
     """Kinder class. Runs around the room and responds to stimuli.
@@ -50,6 +112,8 @@ class Kinder (arcade.Sprite):
     1 - Block saturation
     2 - Naptime
     """
+
+    grid = Grid(9,16)
 
     def __init__(self, spritefile = "images/dummy.png", scaling = SCALING):
         """Constructor"""
@@ -91,6 +155,11 @@ class Kinder (arcade.Sprite):
 
         super().update()
 
+        self.add_to_grid()
+
+    def add_to_grid(self):
+        grid_pos = self.grid.get_grid_pos(self)
+        self.grid.matrix[grid_pos[0]][grid_pos[1]].append(self)
 
     def isOut(self, mode = None):
         """Is sprite hit box out of bounds. Returns Boolean
@@ -161,10 +230,12 @@ class Sim(arcade.Window):
         """Update function"""
         for kinder in self.kinder_list:
             kinder.update(delta_time)
+        Kinder.grid.update() # Check for contests and clear grid
 
     def on_draw(self):
         """Draw function"""
         arcade.start_render()
+        Kinder.grid.draw()
         self.kinder_list.draw()
 
     def get_kinder_sprites(self):
