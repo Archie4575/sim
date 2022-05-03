@@ -1,17 +1,15 @@
 import random
 from math import cos, sin, radians, atan, degrees
-from perlin_noise import PerlinNoise
 
 def rand_direction(start: float = 0.0, stop: float = 360.0, mode: str = 'uniform', t: float = 0) -> list:
-        """Random direction generator: returns random unit vector in rectangular form
+        """Random direction generator: returns random angle in degrees
         with an argument between the stop and start values (in degrees)
         
-        Arguments:
-        - float start:  lowerbound in degrees
-        - float stop:   upperbound in degrees
-        - str mode:     probability distribution function
-            - 'uniform' equal chance of any value
-            - 'gaussian' bell curve distribution
+        :param float start:  lowerbound in degrees
+        :param float stop:   upperbound in degrees
+        :param str mode:     probability distribution function used within the interval
+            'uniform' equal chance of any value
+            'gaussian' bell curve distribution
         """
 
         lower = start
@@ -38,12 +36,13 @@ def rand_direction(start: float = 0.0, stop: float = 360.0, mode: str = 'uniform
         else:
             raise Exception(f"Invalid mode: '{mode}'")
 
-        vector = [round(cos(radians(arg)), 2), round(sin(radians(arg)),2)] # generate rectangular form
-
-        return vector
+        return arg
 
 def vel2dir(velocity: list = (1,0)) -> float:
-    """Get agrument in degrees of rectangular velocity vector"""
+    """Get agrument in degrees of rectangular velocity vector.
+    
+    :param list velocity: rectangular velocity vector
+    """
     if velocity[0] != 0:
         grad = velocity[1]/velocity[0]
         arg = degrees(atan(grad))
@@ -51,7 +50,7 @@ def vel2dir(velocity: list = (1,0)) -> float:
             arg = arg + 180
         return arg
     else:
-        return 90 * (2+velocity[1])
+        return 90 * (2-velocity[1]) # 90 if (0,1) and 270 if (0,-1)
 
 def dir2vel(direction: float = 0) -> list:
     """Get rectangular unit vector from angle in degrees"""
@@ -70,4 +69,3 @@ if __name__ == '__main__':
     print(rand_direction(0,-90,'gaussian'))
     print(vel2dir((1,0)))
     print(vel2dir((-0.707,-0.707)))
-        

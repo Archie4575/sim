@@ -2,14 +2,15 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.3.3
+Version: 0.4.1
 License: GNU GPL
 """
+
 import arcade
 import random
 import os
-from mathutils import *
-from copy import deepcopy
+import mathutils
+from perlin_noise import PerlinNoise
 
 
 # Window Constants
@@ -17,7 +18,7 @@ SCREEN_TITLE = "The Kinderdrome"
 SCREEN_HEIGHT = 720
 SCREEN_WIDTH = 1280
 MARGIN = 2
-NUM_KINDER = 2
+NUM_KINDER = 4
 SCALING = 1
 FPS = 60
 MODES = {
@@ -39,7 +40,7 @@ class Grid (arcade.Sprite):
         :matrix: matrix of cells containing Kinder objects
         :division: side length of one grid square in pixels
     """
-    def __init__(self, rows: int = 9, columns: int = 12):
+    def __init__(self, rows: int = 9, columns: int = 16):
         """Constructor"""
         spritefile = os.path.join(os.path.split(__file__)[0], 'images/checkers.png') # Form absolute path
         scaling = 1
@@ -50,18 +51,20 @@ class Grid (arcade.Sprite):
 
         self.rows = rows
         self.columns = columns
-        self.division = self.width // self.rows # Width of a square
+        self.division = self.width // self.columns # Width of a square
 
         self.matrix = [[[] for c in range(columns)] for r in range(rows)] # Initialise empty matrix
 
     def update(self):
         """Checks for two kinder objects in the same cell and prints if a contest is found.
         Subsequently clears the matrix for the next update."""
-        for r, row in enumerate(self.matrix):
-            for c, cell in enumerate(row):
-                if cell.__len__() > 1:
-                    print(f"Contest in cell: [{r},{c}]")
-        self.clear()
+        if Kinder.mode == 1:
+            for r, row in enumerate(self.matrix):
+                for c, cell in enumerate(row):        
+                    uncontested = [k for k in cell if not k.inContest]
+                    if uncontested.__len__() > 1:
+                        self.print_matrix()
+                        cell.pop().contest(random.choice(cell)) # Last Kinder in list contest a random Kinder in the cellx
 
     def print_matrix(self):
         """Prints the grid matrix"""
@@ -69,7 +72,10 @@ class Grid (arcade.Sprite):
             for c in row:
                 print("[", end='')
                 for i in c:
-                    print(i, " ", end='')
+                    try:
+                        print(i._id, " ", end='')
+                    except:
+                        print('0', end='')
                 print("]", end='')
             print()
         return
@@ -77,8 +83,11 @@ class Grid (arcade.Sprite):
     def get_grid_pos(self, sprite: arcade.Sprite):
         """Returns grid area coordinated. Grid coordinates are of the form [row, column], 
         with grid cooridinate [0,0] being the bottom left-most grid square."""
+        print(self.division)
         r = int(sprite.center_y // self.division)
+        print(r)
         c = int(sprite.center_x // self.division)
+        print(c)
 
         return [r,c]
 
@@ -86,10 +95,7 @@ class Grid (arcade.Sprite):
         """Clears the matrix"""
         self.matrix = [[[] for c in range(self.columns)] for r in range(self.rows)]
 
-
-
         
-
 class Kinder (arcade.Sprite):
     """Kinder class. Runs around the room and responds to stimuli.
         
@@ -113,20 +119,27 @@ class Kinder (arcade.Sprite):
     2 - Naptime
     """
 
+    count = 0
     grid = Grid(9,16)
 
     def __init__(self, spritefile = "images/dummy.png", scaling = SCALING):
         """Constructor"""
         super().__init__(spritefile, scaling)
+        # Give Kinder integer id based on how many Kinder have been spawned
+        Kinder.count += 1
+        self._id = Kinder.count
         # Spawn at random position
         self.left = MARGIN + (SCREEN_WIDTH - 2 * MARGIN - self.width - 1) * random.random()
         self.bottom = MARGIN + (SCREEN_HEIGHT - 2 * MARGIN - self.height - 1) * random.random()
         # Set movement parameters
-        self.velocity = rand_direction()
-        self.traj_vel = deepcopy(self.velocity)
-        self.traj_dir = vel2dir(self.traj_vel)
         self.speed = 2
+        self.velocity = self.new_velocity(mathutils.rand_direction())
+        self.traj_vel = self.velocity
+        self.traj_dir = mathutils.vel2dir(self.traj_vel)
         self.run_timer = 0
+        # Contest variables
+        self.inContest = False
+        self.contest_timer = 0
         # Perlin noise generator
         self.t = 0
         self.perlin = PerlinNoise(octaves=self.speed/2, seed=random.randint(1,1000))
@@ -136,30 +149,90 @@ class Kinder (arcade.Sprite):
     def update(self, delta_time):
         """Update the position of the sprite"""
 
-        if self.mode == 0 or self.mode == 1:                                    # Block surplus or block saturation
-            if self.isOut('x'):                                                 # If out of xbounds
-                self.run_timer = 5                                              # run for 3 frames
-                self.velocity[0] = - self.velocity[0]                           # negate horizontal velocity
-                self.traj_vel[0] = - self.traj_vel[0]                           # and horizontal trajectory
-            if self.isOut('y'):                                                 # Same for ybounds
-                self.run_timer = 5
-                self.velocity[1] = - self.velocity[1]
-                self.traj_vel[1] = - self.traj_vel[1]
+        if self.mode == 0:
+            self.update_velocity()
+        elif self.mode == 1:
+            if self.inContest:
+               self.contest_timer -= 1
+               if self.contest_timer == 30:
+                   self.traj_vel = mathutils.opposite(self.traj_vel)
+                   self.velocity = self.traj_vel
+               elif self.contest_timer <= 0:
+                   self.inContest = False
+            else:
+                self.update_velocity()
 
-            if self.run_timer == 0:                                             # If not running from boundaries, move normally
-                unit_vel = dir2vel(self.traj_dir + next(self.noise()) * 360)    # get new direction
-                final_vel = [v*self.speed for v in unit_vel]                    # scale it based on self.speed
-                self.velocity = final_vel                                       # set velocity
-            else:                                                               # If still running, continue running
-                self.run_timer -= 1
 
         super().update()
 
         self.add_to_grid()
 
     def add_to_grid(self):
+        """Adds self to Kinder.grid.matrix"""
         grid_pos = self.grid.get_grid_pos(self)
         self.grid.matrix[grid_pos[0]][grid_pos[1]].append(self)
+
+    def update_velocity(self):
+        """Updates velocity in a random walk pattern."""
+        if self.isOut('x'):                                                 # If out of xbounds
+            self.run_timer = 5                                              # run for 3 frames
+            if self.left < MARGIN:
+                self.left = MARGIN
+            elif self.right > SCREEN_WIDTH - MARGIN:
+                self.right = SCREEN_WIDTH - MARGIN
+            self.velocity[0] = - self.velocity[0]                           # negate horizontal velocity
+            self.traj_vel[0] = - self.traj_vel[0]                           # and horizontal trajectory
+        if self.isOut('y'):                                                 # Same for ybounds
+            self.run_timer = 5
+            if self.bottom < 0:
+                self.bottom = MARGIN
+            elif self.top > SCREEN_HEIGHT - MARGIN:
+                self.top = SCREEN_HEIGHT - MARGIN
+            self.velocity[1] = - self.velocity[1]
+            self.traj_vel[1] = - self.traj_vel[1]
+
+        if self.run_timer == 0:                                             # If not running from boundaries, move normally
+            new_dir = self.traj_dir + next(self.noise()) * 360              # get new direction
+            self.velocity = self.new_velocity(new_dir)                      # set velocity
+        else:                                                               # If still running, continue running
+            self.run_timer -= 1
+
+
+    def contest(self, opp):
+        """Contest function, usually called by the grid, takes another Kinder.
+        Initiates the block snatching process.
+        
+        :param Kinder opp: the opponent Kinder
+        """
+
+        # Yet to implement
+        # if type(opp) != Kinder:
+        #    throw ContestError
+
+        # Face towards each other
+        self.point_to_sprite(opp)
+        opp.point_to_sprite(self)
+
+        # Halt movement
+        self.stop()
+        opp.stop()
+
+        # Set bools and timers
+        self.inContest, opp.inContest = True, True
+        self.contest_timer, opp.contest_timer = 90, 90
+
+
+
+    def point_to_sprite(self, sprite: arcade.Sprite):
+        coords = sprite.position # == (center_x, center_y)
+        disp_vector = [dest - curr for dest, curr in zip(coords, self.position)]
+        new_vector = self.new_velocity(mathutils.vel2dir(disp_vector))
+        self.velocity = new_vector
+        self.traj_dir = self.velocity
+        
+
+    def new_velocity(self, direction):
+        return [v*self.speed for v in mathutils.dir2vel(direction)]
 
     def isOut(self, mode = None):
         """Is sprite hit box out of bounds. Returns Boolean
@@ -183,7 +256,7 @@ class Kinder (arcade.Sprite):
     @property
     def traj_dir(self):
         """traj_dir getter method"""
-        return vel2dir(self.traj_vel)
+        return mathutils.vel2dir(self.traj_vel)
 
     @traj_dir.setter
     def traj_dir(self, direction):
@@ -194,6 +267,7 @@ class Kinder (arcade.Sprite):
         """Perlin noise generator function"""
         self.t += 1/200 * self.speed # Needs rethinking in terms of FPS
         yield self.perlin(self.t)
+        
     
 class Sim(arcade.Window):
     """
@@ -212,6 +286,9 @@ class Sim(arcade.Window):
         """Constructor"""
         super().__init__(width, height, title, resizable = False)
 
+        self.paused = False
+
+        self.framecount = 0
         self.block_list = arcade.SpriteList()
         self.kinder_list = arcade.SpriteList()
 
@@ -219,18 +296,30 @@ class Sim(arcade.Window):
     def setup(self):
         """Constructor"""
         arcade.set_background_color( (244, 235, 208) )  # F4EBD0 (Off-White)
-        
+
         sprites = self.get_kinder_sprites()             # Load sprite filenames
         for _ in range(NUM_KINDER):                     # Populate with Kinder objects
             kinder = Kinder(random.choice(sprites))
             self.kinder_list.append(kinder)
         
+        Kinder.mode = 1
 
     def on_update(self, delta_time):
         """Update function"""
+        if self.paused:
+            return
+
+        self.framecount += 1
+        Kinder.grid.clear()
         for kinder in self.kinder_list:
             kinder.update(delta_time)
         Kinder.grid.update() # Check for contests and clear grid
+
+    def on_key_press(self, symbol, modifiers):
+        if symbol == arcade.key.SPACE:
+            Kinder.grid.print_matrix()
+            self.paused = not self.paused
+        
 
     def on_draw(self):
         """Draw function"""

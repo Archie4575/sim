@@ -64,3 +64,4 @@ images/ - image resources
 0.3.2 - 28/04/2022 - Docstrings and Python 3.6 compatability  
 0.3.3 - 29/04/2022 - Updated README.md
 0.4.0 - 30/04/2022 - Implemented basic grid framework
+0.4.1 - 04/04/2022 - Implemented contest model, sim framecount, and kinder ids
