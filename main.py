@@ -18,7 +18,7 @@ SCREEN_TITLE = "The Kinderdrome"
 SCREEN_HEIGHT = 720
 SCREEN_WIDTH = 1280
 MARGIN = 2
-NUM_KINDER = 4
+NUM_KINDER = 30
 SCALING = 1
 FPS = 60
 MODES = {
@@ -83,11 +83,8 @@ class Grid (arcade.Sprite):
     def get_grid_pos(self, sprite: arcade.Sprite):
         """Returns grid area coordinated. Grid coordinates are of the form [row, column], 
         with grid cooridinate [0,0] being the bottom left-most grid square."""
-        print(self.division)
         r = int(sprite.center_y // self.division)
-        print(r)
         c = int(sprite.center_x // self.division)
-        print(c)
 
         return [r,c]
 
@@ -302,7 +299,7 @@ class Sim(arcade.Window):
             kinder = Kinder(random.choice(sprites))
             self.kinder_list.append(kinder)
         
-        Kinder.mode = 1
+#        Kinder.mode = 1
 
     def on_update(self, delta_time):
         """Update function"""
