@@ -2,7 +2,7 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.4.1
+Version: 0.5.0
 License: GNU GPL
 """
 
@@ -18,7 +18,9 @@ SCREEN_TITLE = "The Kinderdrome"
 SCREEN_HEIGHT = 720
 SCREEN_WIDTH = 1280
 MARGIN = 2
-NUM_KINDER = 30
+BMARGIN = 50 # Margin in which blocks don't spawn
+NUM_KINDER = 25
+NUM_BLOCKS = 50
 SCALING = 1
 FPS = 60
 MODES = {
@@ -92,6 +94,26 @@ class Grid (arcade.Sprite):
         """Clears the matrix"""
         self.matrix = [[[] for c in range(self.columns)] for r in range(self.rows)]
 
+
+class Block (arcade.Sprite):
+    block_count = 0
+
+    def __init__(self):
+        """Constructor"""
+        spritefile = os.path.join(os.path.split(__file__)[0], 'images/blocks.png') 
+        startx = random.uniform(BMARGIN, SCREEN_WIDTH - BMARGIN) # Random x within block margins 
+        starty = random.uniform(BMARGIN, SCREEN_HEIGHT - BMARGIN) # Random y within block margins
+        super().__init__("images/dummy.png", scale=0.75, center_x = startx, center_y = starty)
+        # Owner attribute
+        self.owner = None
+        Block.block_count += 1
+
+    def draw(self):
+        """Draw functions"""
+        if self.owner: # don't draw if block has an owner,
+            return
+        super().draw()
+
         
 class Kinder (arcade.Sprite):
     """Kinder class. Runs around the room and responds to stimuli.
@@ -142,6 +164,9 @@ class Kinder (arcade.Sprite):
         self.perlin = PerlinNoise(octaves=self.speed/2, seed=random.randint(1,1000))
         # Define hit box
         self.set_hit_box([(24,24), (-24,24), (-24,-24), (24,-24)])
+        # Initialise list of blocks
+        self.blocks = []
+        self.score = 0
 
     def update(self, delta_time):
         """Update the position of the sprite"""
@@ -159,10 +184,37 @@ class Kinder (arcade.Sprite):
             else:
                 self.update_velocity()
 
+        for block in arcade.check_for_collision_with_list(self, Sim.blocks_list):
+            if block.owner:
+                continue
+            self.pickup(block)
+            block.position = (-50, -50) # move off screen to prevent further collisions
+            self.blocks.append(block)
+            Block.block_count -= 1
+            print(f"Score : {self.score}")
+            print(f"Block Left: {Block.block_count}")
 
         super().update()
 
         self.add_to_grid()
+
+    def draw(self):
+        super().draw()
+
+        arcade.draw_text(str(self.score), 
+                start_x = self.left,
+                start_y = self.top + 2,
+                color = (220, 0, 0),
+                font_size=10,
+                width = self.width,
+                align = 'center',
+                font_name = 'Kenney Rocket')
+    
+    def pickup(self, block: Block):
+        """Picks up the block"""
+        block.owner = self
+        self.score += 1
+    
 
     def add_to_grid(self):
         """Adds self to Kinder.grid.matrix"""
@@ -279,15 +331,15 @@ class Sim(arcade.Window):
         :block_list: SpriteList of Block objects
     """
 
+    blocks_list = arcade.SpriteList()
+    kinder_list = arcade.SpriteList()
+
     def __init__(self, width = SCREEN_WIDTH, height = SCREEN_HEIGHT, title = SCREEN_TITLE):
         """Constructor"""
         super().__init__(width, height, title, resizable = False)
 
         self.paused = False
-
         self.framecount = 0
-        self.block_list = arcade.SpriteList()
-        self.kinder_list = arcade.SpriteList()
 
 
     def setup(self):
@@ -298,6 +350,10 @@ class Sim(arcade.Window):
         for _ in range(NUM_KINDER):                     # Populate with Kinder objects
             kinder = Kinder(random.choice(sprites))
             self.kinder_list.append(kinder)
+
+        for _ in range(NUM_BLOCKS):                     # Populate with Block objects
+            block = Block()
+            self.blocks_list.append(block)
         
 #        Kinder.mode = 1
 
@@ -322,7 +378,11 @@ class Sim(arcade.Window):
         """Draw function"""
         arcade.start_render()
         Kinder.grid.draw()
-        self.kinder_list.draw()
+        for block in self.blocks_list:
+            block.draw()
+        for kinder in self.kinder_list:
+           kinder.draw()
+        # self.kinder_list.draw()
 
     def get_kinder_sprites(self):
         """Return absolute paths of image files in images/kinder"""

@@ -56,13 +56,15 @@ images/ - image resources
 0.1.0 - 25/04/2022 - Uniform and Gaussian random walk implemented  
 0.1.1 - 25/04/2022 - Updated the README  
 0.2.0 - 25/04/2022 - Implemented perlin walk and boundary bouncing  
-0.2.1 - 25/04/2022 - README.md formatting  
+0.2.1 - 25/04/2022 - `README.md` formatting  
 0.2.2 - 25/04/2022 - Added timmy.png and images/kinder sub-directory  
-0.2.3 - 25/04/2022 - Added requirements.txt file  
+0.2.3 - 25/04/2022 - Added `requirements.txt` file  
 0.3.0 - 28/04/2022 - Implemented extensible set of kinder sprites  
 0.3.1 - 28/04/2022 - Set FPS and made spritefile paths absolute  
 0.3.2 - 28/04/2022 - Docstrings and Python 3.6 compatability  
-0.3.3 - 29/04/2022 - Updated README.md  
+0.3.3 - 29/04/2022 - Updated `README.md`  
 0.4.0 - 30/04/2022 - Implemented basic grid framework  
-0.4.1 - 04/04/2022 - Implemented contest model, sim framecount, and kinder ids  
-0.4.2 - 10/04/2022 - Updated packages  
+0.4.1 - 04/05/2022 - Implemented contest model, sim framecount, and kinder ids  
+0.4.2 - 10/05/2022 - Updated packages  
+0.5.0 - 11/05/2022 - Implemented `Block` objects  
+0.5.1 - 12/05/2022 - Fixing speed for score labels
