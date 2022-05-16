@@ -2,7 +2,7 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.5.0
+Version: 0.5.1
 License: GNU GPL
 """
 

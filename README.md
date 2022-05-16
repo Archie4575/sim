@@ -1,12 +1,11 @@
 The Kinderdrome
 ===============
-Author: Archer Fabling \[20885436\]  
-Contact:  <20885436@student.curtin.edu.au>  
+Author: Archer Fabling    
+Contact:  <Archer.Fabling@student.curtin.edu.au>  
 GitHub: https://github.com/Archie4575
 
 ## Synopsis
 
-Final Assignment for COMP1005:
 A simulation of kindergarten kids running around a classroom and picking up blocks.  
 The simulation has several modes:  
 Block Surplus - Initial mode where kindergarteners collect blocks  
@@ -34,21 +33,22 @@ Run the simulation:
 
 **work in progress*
 
+## Contents
 
-## Content
-
-README.md - README file  
-.gitignore - python project gitignore template  
-requiremetns.txt - pip package dependencies for Linux and Windows  
-requirements_macos.txt - pip package dependencies for MacOS (includes PyObjC)  
-main.py - main simulation  
-mathutils.py - vector functions  
-images/ - image resources  
-- checkers.png - black and white checkered grid 
-- dummy.png - 40x40 dummy sprite  
-- kinder/ - sprite image files  
+- README.md - README file  
+- .gitignore - python project gitignore template  
+- requiremetns.txt - pip package dependencies for Linux and Windows  
+- requirements_macos.txt - pip package dependencies for MacOS (includes PyObjC)  
+- main.py - main simulation  
+- mathutils.py - vector functions  
+- images/ - image resources  
+    - checkers.png - black and white checkered grid   
+    - dummy.png - 40x40 dummy sprite  
+    - kinder/ - sprite image files  
 
 ## Dependencies
+
+Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 
 ## Version Information
 0.0.1 - 14/04/2022 - Initialisation  
@@ -67,4 +67,4 @@ images/ - image resources
 0.4.1 - 04/05/2022 - Implemented contest model, sim framecount, and kinder ids  
 0.4.2 - 10/05/2022 - Updated packages  
 0.5.0 - 11/05/2022 - Implemented `Block` objects  
-0.5.1 - 12/05/2022 - Fixing speed for score labels
+0.5.1 - 12/05/2022 - Fixing speed for score labels and updated README
