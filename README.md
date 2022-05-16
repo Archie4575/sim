@@ -1,21 +1,23 @@
 The Kinderdrome
 ===============
-Author: Archer Fabling    
-Contact:  <Archer.Fabling@student.curtin.edu.au>  
-GitHub: https://github.com/Archie4575
+Author: Archer Fabling  
+Contact:  <20885436@student.curtin.edu.au>  
+GitHub: https://github.com/Archie4575  
 
 ## Synopsis
 
 A simulation of kindergarten kids running around a classroom and picking up blocks.  
 The simulation has several modes:  
-Block Surplus - Initial mode where kindergarteners collect blocks  
-Block Saturation - Kindergarteners start to contest ecah other and snatching blocks. Triggered when all blocks have been collected.  
-Nap Time - All kindergarteners drop their blocks find a place to rest.  
+- Block Surplus - Kindergarteners meander and collect blocks upon collision  
+- Block Saturation - Kindergarteners start to contest ecah other and snatch each others' blocks when all blocks have been collected.  
+- Nap Time - All kindergarteners drop their blocks and find a place to rest.   
+
+In a contest between two kindergarteners, the kindergartener with the most blocks has a better chance of winning the contest. This is designed to simulate a system of inequal distribution where the rich get richer and should, if ran long enough, produce a Pareto distribution of blocks in which the top 20% of kinders have accumulated approximately 80% of the blocks. To test this, statistics about the distribution of wealth are printed to standard out every time the nap-time is entered by the user and the economy of blocks is reset. 
 
 ## Installation
 
 Clone the repository:
->`git clone http://github.com/Archie4575/sim`  
+>`git clone https://github.com/Archie4575/sim.git`  
 >`cd sim`  
 
 Install the packages on Linux and Windwos:  
@@ -31,18 +33,17 @@ Run the simulation:
 
 ### Options:  
 
-**work in progress*
+*\*work in progress\**
 
-## Contents
+## Content
 
 - README.md - README file  
-- .gitignore - python project gitignore template  
-- requiremetns.txt - pip package dependencies for Linux and Windows  
+- requirements.txt - pip package dependencies for Linux and Windows  
 - requirements_macos.txt - pip package dependencies for MacOS (includes PyObjC)  
-- main.py - main simulation  
-- mathutils.py - vector functions  
+- main.py - main simulation code and class definitions  
+- mathutils.py - related math functions  
 - images/ - image resources  
-    - checkers.png - black and white checkered grid   
+    - checkers.png - black and white checkered grid 
     - dummy.png - 40x40 dummy sprite  
     - kinder/ - sprite image files  
 
