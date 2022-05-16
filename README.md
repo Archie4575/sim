@@ -44,8 +44,11 @@ Run the simulation:
 - mathutils.py - related math functions  
 - images/ - image resources  
     - checkers.png - black and white checkered grid 
+    - floor.png - wood tiled floor
+    - digits.png - light blue digits 0 to 9 in Kenney Rocket font for score labels
     - dummy.png - 40x40 dummy sprite  
-    - kinder/ - sprite image files  
+    - blocks.png - pile of blocks sprite
+    - kinder/ - sprite image files (extensible, sprite files and paths are reloaded from disk every simulation)
 
 ## Dependencies
 
@@ -69,3 +72,4 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.4.2 - 10/05/2022 - Updated packages  
 0.5.0 - 11/05/2022 - Implemented `Block` objects  
 0.5.1 - 12/05/2022 - Fixing speed for score labels and updated README
+0.5.2 - 16/05/2022 - Added Digits and ScoreLabel objects and Grid and Block textures

@@ -19,8 +19,8 @@ SCREEN_HEIGHT = 720
 SCREEN_WIDTH = 1280
 MARGIN = 2
 BMARGIN = 50 # Margin in which blocks don't spawn
-NUM_KINDER = 25
-NUM_BLOCKS = 50
+NUM_KINDER = 5
+NUM_BLOCKS = 2
 SCALING = 1
 FPS = 60
 MODES = {
@@ -44,7 +44,7 @@ class Grid (arcade.Sprite):
     """
     def __init__(self, rows: int = 9, columns: int = 16):
         """Constructor"""
-        spritefile = os.path.join(os.path.split(__file__)[0], 'images/checkers.png') # Form absolute path
+        spritefile = os.path.join(os.path.split(__file__)[0], 'images/floor.png') # Form absolute path
         scaling = 1
         super().__init__(spritefile, scaling)
 
@@ -58,8 +58,7 @@ class Grid (arcade.Sprite):
         self.matrix = [[[] for c in range(columns)] for r in range(rows)] # Initialise empty matrix
 
     def update(self):
-        """Checks for two kinder objects in the same cell and prints if a contest is found.
-        Subsequently clears the matrix for the next update."""
+        """Checks for two kinder objects in the same cell before randomly picking one to contest another"""
         if Kinder.mode == 1:
             for r, row in enumerate(self.matrix):
                 for c, cell in enumerate(row):        
@@ -103,7 +102,7 @@ class Block (arcade.Sprite):
         spritefile = os.path.join(os.path.split(__file__)[0], 'images/blocks.png') 
         startx = random.uniform(BMARGIN, SCREEN_WIDTH - BMARGIN) # Random x within block margins 
         starty = random.uniform(BMARGIN, SCREEN_HEIGHT - BMARGIN) # Random y within block margins
-        super().__init__("images/dummy.png", scale=0.75, center_x = startx, center_y = starty)
+        super().__init__(spritefile, scale=1, center_x = startx, center_y = starty)
         # Owner attribute
         self.owner = None
         Block.block_count += 1
@@ -167,6 +166,8 @@ class Kinder (arcade.Sprite):
         # Initialise list of blocks
         self.blocks = []
         self.score = 0
+        # Initialise ScoreLabel object
+        self.label = ScoreLabel(self)
 
     def update(self, delta_time):
         """Update the position of the sprite"""
@@ -183,38 +184,45 @@ class Kinder (arcade.Sprite):
                    self.inContest = False
             else:
                 self.update_velocity()
-
-        for block in arcade.check_for_collision_with_list(self, Sim.blocks_list):
-            if block.owner:
-                continue
-            self.pickup(block)
-            block.position = (-50, -50) # move off screen to prevent further collisions
-            self.blocks.append(block)
-            Block.block_count -= 1
-            print(f"Score : {self.score}")
-            print(f"Block Left: {Block.block_count}")
+        
+        if self.mode == 0:
+            for block in arcade.check_for_collision_with_list(self, Sim.blocks_list):
+                if block.owner:
+                    continue
+                self.pickup(block)
 
         super().update()
+
+        self.label.update()
+
 
         self.add_to_grid()
 
     def draw(self):
         super().draw()
 
-        arcade.draw_text(str(self.score), 
-                start_x = self.left,
-                start_y = self.top + 2,
-                color = (220, 0, 0),
-                font_size=10,
-                width = self.width,
-                align = 'center',
-                font_name = 'Kenney Rocket')
+        self.label.digit_sprites.draw()
+
+        # arcade.draw_text(str(self.score), 
+        #         start_x = self.left,
+        #         start_y = self.top + 2,
+        #         color = (220, 0, 0),
+        #         font_size=10,
+        #         width = self.width,
+        #         align = 'center',
+        #         font_name = 'Kenney Rocket')
     
     def pickup(self, block: Block):
         """Picks up the block"""
         block.owner = self
+        block.position = (-50, -50) # move off screen to prevent further collisions
+        self.blocks.append(block)
+
         self.score += 1
-    
+        Block.block_count -= 1
+        if Block.block_count == 0: # If no blocks left..
+            Kinder.mode = 1 # Enter Block Saturation mode
+            print("Entering \"Block Saturation\" mode")
 
     def add_to_grid(self):
         """Adds self to Kinder.grid.matrix"""
@@ -226,23 +234,26 @@ class Kinder (arcade.Sprite):
         if self.isOut('x'):                                                 # If out of xbounds
             self.run_timer = 5                                              # run for 3 frames
             if self.left < MARGIN:
-                self.left = MARGIN
+                self.left = MARGIN + 1
             elif self.right > SCREEN_WIDTH - MARGIN:
-                self.right = SCREEN_WIDTH - MARGIN
-            self.velocity[0] = - self.velocity[0]                           # negate horizontal velocity
+                self.right = SCREEN_WIDTH - MARGIN - 1
             self.traj_vel[0] = - self.traj_vel[0]                           # and horizontal trajectory
+            self.velocity[0] = - self.velocity[0]                           # negate horizontal velocity
         if self.isOut('y'):                                                 # Same for ybounds
             self.run_timer = 5
             if self.bottom < 0:
-                self.bottom = MARGIN
+                self.bottom = MARGIN + 1
             elif self.top > SCREEN_HEIGHT - MARGIN:
-                self.top = SCREEN_HEIGHT - MARGIN
-            self.velocity[1] = - self.velocity[1]
+                self.top = SCREEN_HEIGHT - MARGIN - 1
             self.traj_vel[1] = - self.traj_vel[1]
+            self.velocity[1] = - self.velocity[1]
 
         if self.run_timer == 0:                                             # If not running from boundaries, move normally
             new_dir = self.traj_dir + next(self.noise()) * 360              # get new direction
             self.velocity = self.new_velocity(new_dir)                      # set velocity
+            if random.random() < (1/120):
+                self.traj_vel = self.velocity
+                self.t = random.randrange(0,10)
         else:                                                               # If still running, continue running
             self.run_timer -= 1
 
@@ -317,7 +328,61 @@ class Kinder (arcade.Sprite):
         self.t += 1/200 * self.speed # Needs rethinking in terms of FPS
         yield self.perlin(self.t)
         
+
+class ScoreLabel ():
+    font_file = os.path.join(os.path.split(__file__)[0], 'images/digits.png')
+    digit_width = 18
+    digit_height = 10
+
+    def __init__(self, parent: Kinder, score: int = 0):
+        self.parent = parent
+        
+        self.digit_sprites = arcade.SpriteList()
+
+        self.set_digits(0)
+        self._lastscore = 0
+
+        self.update()
     
+    def update(self):
+        if self.score != self._lastscore:
+            self.set_digits(self.score) 
+        self.update_digit_positions()
+        self.digit_sprites.draw()
+
+    def set_digits(self, score):
+        self.digit_sprites.clear()
+
+        for digit in str(score):
+            self.digit_sprites.append( Digit(int(digit)) )
+        
+    @property
+    def score(self):
+        return self.parent.score
+    
+    def update_digit_positions(self):
+        num = len(self.digit_sprites)
+        label_width = self.digit_width * num
+        start_y = self.parent.top + 1
+        start_x = self.parent.left + ((self.parent.width - label_width) / 2)
+        
+        for index, digit in enumerate(self.digit_sprites):
+            digit.bottom = start_y
+            digit.left = start_x + index * self.digit_width
+
+            
+class Digit (arcade.Sprite):
+
+    def __init__(self, value: int = 0):
+        x, y = value * ScoreLabel.digit_width, 0
+        super().__init__(ScoreLabel.font_file,
+                scale = 1,
+                image_x = x,
+                image_y = y,
+                image_width = ScoreLabel.digit_width,
+                image_height = ScoreLabel.digit_height)
+
+
 class Sim(arcade.Window):
     """
     Main Simulation Class
@@ -408,7 +473,7 @@ def main():
     sim = Sim(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     sim.setup()
     sim.set_update_rate(1/FPS)
-    arcade.run()
+    arcade.run()    
 
 if __name__ == "__main__":
     main()
