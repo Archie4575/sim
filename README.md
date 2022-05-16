@@ -1,22 +1,24 @@
 The Kinderdrome
 ===============
-Author: Archer Fabling \[20885436\]  
+Author: Archer Fabling  
 Contact:  <20885436@student.curtin.edu.au>  
-GitHub: https://github.com/Archie4575
+GitHub: https://github.com/Archie4575  
 
 ## Synopsis
 
 Final Assignment for COMP1005:
 A simulation of kindergarten kids running around a classroom and picking up blocks.  
 The simulation has several modes:  
-Block Surplus - Initial mode where kindergarteners collect blocks  
-Block Saturation - Kindergarteners start to contest ecah other and snatching blocks. Triggered when all blocks have been collected.  
-Nap Time - All kindergarteners drop their blocks find a place to rest.  
+- Block Surplus - Kindergarteners meander and collect blocks upon collision  
+- Block Saturation - Kindergarteners start to contest ecah other and snatch each others' blocks when all blocks have been collected.  
+- Nap Time - All kindergarteners drop their blocks and find a place to rest.   
+
+In a contest between two kindergarteners, the kindergartener with the most blocks has a better chance of winning the contest. This is designed to simulate a system of inequal distribution where the rich get richer and should, if ran long enough, produce a Pareto distribution of blocks in which the top 20% of kinders have accumulated approximately 80% of the blocks. To test this, statistics about the distribution of wealth are printed to standard out every time the nap-time is entered by the user and the economy of blocks is reset. 
 
 ## Installation
 
 Clone the repository:
->`git clone http://github.com/Archie4575/sim`  
+>`git clone https://github.com/Archie4575/sim.git`  
 >`cd sim`  
 
 Install the packages on Linux and Windwos:  
@@ -32,21 +34,20 @@ Run the simulation:
 
 ### Options:  
 
-**work in progress*
+*\*work in progress\**
 
 
 ## Content
 
-README.md - README file  
-.gitignore - python project gitignore template  
-requiremetns.txt - pip package dependencies for Linux and Windows  
-requirements_macos.txt - pip package dependencies for MacOS (includes PyObjC)  
-main.py - main simulation  
-mathutils.py - vector functions  
-images/ - image resources  
-- checkers.png - black and white checkered grid 
-- dummy.png - 40x40 dummy sprite  
-- kinder/ - sprite image files  
+- README.md - README file  
+- requirements.txt - pip package dependencies for Linux and Windows  
+- requirements_macos.txt - pip package dependencies for MacOS (includes PyObjC)  
+- main.py - main simulation code and class definitions  
+- mathutils.py - related math functions  
+- images/ - image resources  
+    - checkers.png - black and white checkered grid 
+    - dummy.png - 40x40 dummy sprite  
+    - kinder/ - sprite image files  
 
 ## Dependencies
 
@@ -67,4 +68,4 @@ images/ - image resources
 0.4.1 - 04/05/2022 - Implemented contest model, sim framecount, and kinder ids  
 0.4.2 - 10/05/2022 - Updated packages  
 0.5.0 - 11/05/2022 - Implemented `Block` objects  
-0.5.1 - 12/05/2022 - Fixing speed for score labels
+0.5.1 - 12/05/2022 - Fixing speed for score labels  
