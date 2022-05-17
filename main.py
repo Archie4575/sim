@@ -29,6 +29,72 @@ MODES = {
     "nap_time": 2,
 }
 
+
+class Grid (arcade.Sprite):
+    """Grid class. A static background sprite that has a matrix of cells containing the Kinder objects currently
+    in said grid area. i.e. If two Kinder objects has center_x and center_y coordinates that lie within the same
+    grid area, their objects will be in the same matrix cell. This is useful for initialising a contest for 
+    mode 1 (block saturation).
+    
+    :param int rows: numbers of rows
+    :param int columns: number of columns
+    
+    Attributes:
+        :matrix: matrix of cells containing Kinder objects
+        :division: side length of one grid square in pixels
+    """
+    def __init__(self, rows: int = 9, columns: int = 16):
+        """Constructor"""
+        spritefile = os.path.join(os.path.split(__file__)[0], 'images/floor.png') # Form absolute path
+        scaling = 1
+        super().__init__(spritefile, scaling)
+
+        self.left = 0
+        self.bottom = 0
+
+        self.rows = rows
+        self.columns = columns
+        self.division = self.width // self.columns # Width of a square
+
+        self.matrix = [[[] for c in range(columns)] for r in range(rows)] # Initialise empty matrix
+
+    def update(self):
+        """Checks for two kinder objects in the same cell before randomly picking one to contest another"""
+        if Kinder.mode == 1:
+            for r, row in enumerate(self.matrix):
+                for c, cell in enumerate(row):        
+                    uncontested = [k for k in cell if not k.inContest]
+                    if uncontested.__len__() > 1:
+                        self.print_matrix()
+                        cell.pop().contest(random.choice(cell)) # Last Kinder in list contest a random Kinder in the cellx
+
+    def print_matrix(self):
+        """Prints the grid matrix"""
+        for row in self.matrix[::-1]:
+            for c in row:
+                print("[", end='')
+                for i in c:
+                    try:
+                        print(i._id, " ", end='')
+                    except:
+                        print('0', end='')
+                print("]", end='')
+            print()
+        return
+    
+    def get_grid_pos(self, sprite: arcade.Sprite):
+        """Returns grid area coordinated. Grid coordinates are of the form [row, column], 
+        with grid cooridinate [0,0] being the bottom left-most grid square."""
+        r = int(sprite.center_y // self.division)
+        c = int(sprite.center_x // self.division)
+
+        return [r,c]
+
+    def clear(self):
+        """Clears the matrix"""
+        self.matrix = [[[] for c in range(self.columns)] for r in range(self.rows)]
+
+
 class Kinder (arcade.Sprite):
     """Kinder class. Runs around the room and responds to stimuli.
         
@@ -232,71 +298,6 @@ class Kinder (arcade.Sprite):
         """Perlin noise generator function"""
         self.t += 1/200 * self.speed # Needs rethinking in terms of FPS
         yield self.perlin(self.t)
-        
-
-class Grid (arcade.Sprite):
-    """Grid class. A static background sprite that has a matrix of cells containing the Kinder objects currently
-    in said grid area. i.e. If two Kinder objects has center_x and center_y coordinates that lie within the same
-    grid area, their objects will be in the same matrix cell. This is useful for initialising a contest for 
-    mode 1 (block saturation).
-    
-    :param int rows: numbers of rows
-    :param int columns: number of columns
-    
-    Attributes:
-        :matrix: matrix of cells containing Kinder objects
-        :division: side length of one grid square in pixels
-    """
-    def __init__(self, rows: int = 9, columns: int = 16):
-        """Constructor"""
-        spritefile = os.path.join(os.path.split(__file__)[0], 'images/floor.png') # Form absolute path
-        scaling = 1
-        super().__init__(spritefile, scaling)
-
-        self.left = 0
-        self.bottom = 0
-
-        self.rows = rows
-        self.columns = columns
-        self.division = self.width // self.columns # Width of a square
-
-        self.matrix = [[[] for c in range(columns)] for r in range(rows)] # Initialise empty matrix
-
-    def update(self):
-        """Checks for two kinder objects in the same cell before randomly picking one to contest another"""
-        if Kinder.mode == 1:
-            for r, row in enumerate(self.matrix):
-                for c, cell in enumerate(row):        
-                    uncontested = [k for k in cell if not k.inContest]
-                    if uncontested.__len__() > 1:
-                        self.print_matrix()
-                        cell.pop().contest(random.choice(cell)) # Last Kinder in list contest a random Kinder in the cellx
-
-    def print_matrix(self):
-        """Prints the grid matrix"""
-        for row in self.matrix[::-1]:
-            for c in row:
-                print("[", end='')
-                for i in c:
-                    try:
-                        print(i._id, " ", end='')
-                    except:
-                        print('0', end='')
-                print("]", end='')
-            print()
-        return
-    
-    def get_grid_pos(self, sprite: arcade.Sprite):
-        """Returns grid area coordinated. Grid coordinates are of the form [row, column], 
-        with grid cooridinate [0,0] being the bottom left-most grid square."""
-        r = int(sprite.center_y // self.division)
-        c = int(sprite.center_x // self.division)
-
-        return [r,c]
-
-    def clear(self):
-        """Clears the matrix"""
-        self.matrix = [[[] for c in range(self.columns)] for r in range(self.rows)]
 
 
 class Block (arcade.Sprite):
