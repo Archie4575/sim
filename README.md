@@ -73,3 +73,4 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.5.0 - 11/05/2022 - Implemented `Block` objects  
 0.5.1 - 12/05/2022 - Fixing speed for score labels and updated README
 0.5.2 - 16/05/2022 - Added Digits and ScoreLabel objects and Grid and Block textures
+0.5.3 - 17/05/2022 - New Docstrings
