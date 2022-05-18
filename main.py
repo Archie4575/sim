@@ -1,34 +1,24 @@
+#!/usr/bin/env python3
 """
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.5.4
+Version: 0.6.0
 License: GNU GPL
 """
 
-import arcade
+try:
+    import arcade
+    from perlin_noise import PerlinNoise
+except ModuleNotFoundError as err:
+    print(err)
+    print("The right modules haven't been installed yet.\nTry running \"python3 -m pip install -r requirements.txt\" to install the correct pacakages. (use \"requirements_macos.txt\" on Mac)")
+    exit()
+
 import random
 import os
 import mathutils
-from perlin_noise import PerlinNoise
-
-
-# Window Constants
-SCREEN_TITLE = "The Kinderdrome"
-SCREEN_HEIGHT = 720
-SCREEN_WIDTH = 1280
-MARGIN = 2
-BMARGIN = 50 # Margin in which blocks don't spawn
-NUM_KINDER = 20
-NUM_BLOCKS = 40
-SCALING = 1
-FPS = 60
-MODES = {
-    "block-surplus": 0,
-    "block-saturation": 1,
-    "nap_time": 2,
-}
-
+import argparse
 
 class Grid (arcade.Sprite):
     """Grid class. A static background sprite that has a matrix of cells containing the Kinder objects currently
@@ -96,12 +86,13 @@ class Block (arcade.Sprite):
     Attributes:
         :Kinder owner: Defaults to none, changes when block is picked up."""
     block_count = 0 # Number of blocks on the ground
+    BMARGIN = 50
 
     def __init__(self):
         """Constructor"""
         spritefile = os.path.join(os.path.split(__file__)[0], 'images/blocks.png') 
-        startx = random.uniform(BMARGIN, SCREEN_WIDTH - BMARGIN) # Random x within block margins 
-        starty = random.uniform(BMARGIN, SCREEN_HEIGHT - BMARGIN) # Random y within block margins
+        startx = random.uniform(self.BMARGIN, Sim.SCREEN_WIDTH - self.BMARGIN) # Random x within block margins 
+        starty = random.uniform(self.BMARGIN, Sim.SCREEN_HEIGHT - self.BMARGIN) # Random y within block margins
         super().__init__(spritefile, scale=1, center_x = startx, center_y = starty)
         # Owner attribute
         self.owner = None
@@ -131,30 +122,32 @@ class Kinder (arcade.Sprite):
     """
 
     mode = 0
-    """Modes:
-    0 - Block surplus
-    1 - Block saturation
-    2 - Naptime
-    """
+    MODES = {
+        "block_surplus": 0,
+        "block_saturation": 1,
+        "nap_time": 2,
+        }
 
     count = 0
-    grid = Grid(9,16)
+    grid = None
 
-    def __init__(self, spritefile = "images/dummy.png", scaling = SCALING):
+    def __init__(self, spritefile = "images/dummy.png", scaling = 1):
         """Constructor"""
         super().__init__(spritefile, scaling)
+        # Initailise the grid
+        if not Kinder.grid: 
+            Kinder.grid = Grid()
         # Give Kinder integer id based on how many Kinder have been spawned
         Kinder.count += 1
         self._id = Kinder.count
         # Spawn at random position
-        self.left = MARGIN + (SCREEN_WIDTH - 2 * MARGIN - self.width - 1) * random.random()
-        self.bottom = MARGIN + (SCREEN_HEIGHT - 2 * MARGIN - self.height - 1) * random.random()
+        self.left = Sim.MARGIN + (Sim.SCREEN_WIDTH - 2 * Sim.MARGIN - self.width - 1) * random.random()
+        self.bottom = Sim.MARGIN + (Sim.SCREEN_HEIGHT - 2 * Sim.MARGIN - self.height - 1) * random.random()
         # Set movement parameters
         self.speed = 2
         self.velocity = self.new_velocity(mathutils.rand_direction())
         self.traj_vel = self.velocity
         self.traj_dir = mathutils.vel2dir(self.traj_vel)
-        self.run_timer = 0
         # Contest variables
         self.inContest = False
         self.contest_timer = 0
@@ -171,9 +164,11 @@ class Kinder (arcade.Sprite):
 
     def update(self, delta_time):
         """Update the position of the sprite"""
-        if self.mode == 0:
+        self.collide_with_margins()
+
+        if self.mode == self.MODES['block_surplus']:
             self.update_velocity()
-        elif self.mode == 1:
+        elif self.mode == self.MODES['block_saturation']:
             if self.inContest:
                self.contest_timer -= 1
                if self.contest_timer == 30:
@@ -201,14 +196,15 @@ class Kinder (arcade.Sprite):
     def pickup(self, block: Block):
         """Picks up the block"""
         block.owner = self
+        print(f"Kinder #{self._id} picked up a block. \tScore = {self.score} \tRemaining = {Block.block_count}")
         block.position = (-50, -50) # move off screen to prevent further collisions
         self.blocks.append(block)
 
         self.score += 1
         Block.block_count -= 1
         if Block.block_count == 0: # If no blocks left..
-            Kinder.mode = 1 # Enter Block Saturation mode
-            print("Entering \"Block Saturation\" mode")
+            Kinder.mode = Kinder.MODES["block_saturation"] 
+            print("Zero blocks left! Entering \"Block Saturation\" mode!")
 
     def add_to_grid(self):
         """Adds self to Kinder.grid.matrix"""
@@ -220,8 +216,6 @@ class Kinder (arcade.Sprite):
 
     def update_velocity(self):
         """Updates velocity in a random walk pattern using perlin noise"""
-
-        self.collide_with_margins()
 
         new_dir = self.traj_dir + next(self.noise()) * 360              # get new direction
         self.velocity = self.new_velocity(new_dir)                      # set velocity
@@ -235,11 +229,6 @@ class Kinder (arcade.Sprite):
         
         :param Sprite opp: the opponent Kinder
         """
-
-        # Yet to implement
-        # if type(opp) != Kinder:
-        #    throw ContestError
-
         # Face towards each other
         self.point_to_sprite(opp)
         opp.point_to_sprite(self)
@@ -278,18 +267,22 @@ class Kinder (arcade.Sprite):
             Use 'x' to check left and right bounds.
             Use 'y' to check top and bottom bounds.
         """
-        if self.left < MARGIN:
-            self.left = MARGIN + 1
+        CENTER_MARGIN = Sim.MARGIN + self.width / 2 # Margin relative to the center of the sprite
+        SCREEN_WIDTH = Sim.SCREEN_WIDTH
+        SCREEN_HEIGHT = Sim.SCREEN_HEIGHT
+
+        if self.center_x < CENTER_MARGIN:
+            self.center_x = CENTER_MARGIN + 1
             self.traj_vel[0] *= -1
-        if self.right > SCREEN_WIDTH - MARGIN:
-            self.right = SCREEN_WIDTH - MARGIN - 1
+        if self.center_x > SCREEN_WIDTH - CENTER_MARGIN:
+            self.center_x = SCREEN_WIDTH - CENTER_MARGIN - 1
             self.traj_vel[0] *= -1
 
-        if self.bottom < MARGIN:
-            self.bottom = MARGIN + 1
+        if self.center_y < CENTER_MARGIN:
+            self.center_y = CENTER_MARGIN + 1
             self.traj_vel[1] *= -1
-        if self.top > SCREEN_HEIGHT - MARGIN:
-            self.top = SCREEN_HEIGHT - MARGIN - 1
+        if self.center_y > SCREEN_HEIGHT - CENTER_MARGIN:
+            self.center_y = SCREEN_HEIGHT - CENTER_MARGIN - 1
             self.traj_vel[1] *= -1
         
     @property
@@ -307,9 +300,7 @@ class Kinder (arcade.Sprite):
         self.t += 1/200 * self.speed # Needs rethinking in terms of FPS
         yield self.perlin(self.t)
 
-
-       
-class ScoreLabel ():
+class ScoreLabel (): 
     """ScoreLabel object. Assigned to a parent Kinder at construction and assigned a score to display.
     Manages and updates a list of Digit objects which are shown on screen above the sprite.
     
@@ -399,10 +390,18 @@ class Sim(arcade.Window):
     blocks_list = arcade.SpriteList()
     kinder_list = arcade.SpriteList()
 
-    def __init__(self, width = SCREEN_WIDTH, height = SCREEN_HEIGHT, title = SCREEN_TITLE):
-        """Constructor"""
-        super().__init__(width, height, title, resizable = False)
+    SCREEN_TITLE = "The Kinderdrome"
+    SCREEN_WIDTH = 1280
+    SCREEN_HEIGHT = 720
+    MARGIN = 2
+    FPS = 60
 
+    def __init__(self, numkinder, numblocks):
+        """Constructor"""
+        super().__init__(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, self.SCREEN_TITLE, resizable = False)
+
+        self.numkinder = numkinder
+        self.numblocks = numblocks
         self.paused = False
         self.framecount = 0
 
@@ -411,12 +410,12 @@ class Sim(arcade.Window):
         """Constructor"""
         arcade.set_background_color( (244, 235, 208) )  # F4EBD0 (Off-White)
 
-        sprites = self.get_kinder_sprites()             # Load sprite filenames
-        for _ in range(NUM_KINDER):                     # Populate with Kinder objects
-            kinder = Kinder(random.choice(sprites))
+        sprites = self.get_kinder_sprites()  # Load sprite filenames
+        for n in range(self.numkinder):  # Populate with Kinder objects
+            kinder = Kinder(sprites[n % len(sprites)])  # Create even distribution of sprites
             self.kinder_list.append(kinder)
 
-        for _ in range(NUM_BLOCKS):                     # Populate with Block objects
+        for _ in range(self.numblocks):  # Populate with Block objects
             block = Block()
             self.blocks_list.append(block)
         
@@ -473,14 +472,16 @@ class Sim(arcade.Window):
 
 
 def main():
-    sim = Sim(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    parser = argparse.ArgumentParser(description="Kinderdrome simulation using python arcade package")
+    parser.add_argument("-k", "--numkinder", default=20, metavar='INT', help="Number of Kindergarteners to spawn. Default=20")
+    parser.add_argument("-b", "--numblocks", default=40, metavar='INT', help="Number of Blocks to spawn. Default=40")
+    args = parser.parse_args()
+
+    sim = Sim(int(args.numkinder), int(args.numblocks))
     sim.setup()
-    sim.set_update_rate(1/FPS)
-    try:
-        arcade.run()    
-    except Exception as err:
-        print(err)
-        sim.pause()
+    sim.set_update_rate(1/Sim.FPS)
+
+    arcade.run()    
 
 if __name__ == "__main__":
     main()

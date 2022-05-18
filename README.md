@@ -31,9 +31,19 @@ Or if using MacOS:
 Run the simulation:
 >`python3 main.py`
 
-### Options:  
+### Options
 
-*\*work in progress\**
+View help:
+> -h, --help
+
+Control the number of Kindergarteners spawned: (Default=20)
+> -k **INT**, --numkinder **INT**  
+
+Control the number of Blocks available: (Default=40)
+> -b **INT**, --numblocks **INT**
+
+Example: Spawns 15 Kindergarteners and 100 blocks.
+> python3 main.py -k 15 -b 100
 
 ## Content
 
@@ -72,6 +82,7 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.4.2 - 10/05/2022 - Updated packages  
 0.5.0 - 11/05/2022 - Implemented `Block` objects  
 0.5.1 - 12/05/2022 - Fixing speed for score labels and updated README
-0.5.2 - 16/05/2022 - Added Digits and ScoreLabel objects and Grid and Block textures
-0.5.3 - 17/05/2022 - New Docstrings
-0.5.4 - 17/05/2022 - Change to Grid.print_matrix() and Kinder boundary collisions
+0.5.2 - 16/05/2022 - Added Digits and ScoreLabel objects and Grid and Block textures  
+0.5.3 - 17/05/2022 - New Docstrings  
+0.5.4 - 17/05/2022 - Change to Grid.print_matrix() and Kinder boundary collisions  
+0.6.0 - 18/05/2022 - CLI implemented  
