@@ -2,7 +2,7 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.5.3
+Version: 0.5.4
 License: GNU GPL
 """
 
@@ -70,17 +70,12 @@ class Grid (arcade.Sprite):
 
     def print_matrix(self):
         """Prints the grid matrix"""
-        for row in self.matrix[::-1]:
+        for ridx, row in enumerate(self.matrix[::-1]):
+            print(ridx, " [", end='')
             for c in row:
-                print("[", end='')
-                for i in c:
-                    try:
-                        print(i._id, " ", end='')
-                    except:
-                        print('0', end='')
-                print("]", end='')
-            print()
-        return
+                print(f"{len(c)}", end="")
+            print("]")
+        print()
     
     def get_grid_pos(self, sprite: arcade.Sprite):
         """Returns grid area coordinated. Grid coordinates are of the form [row, column], 
@@ -95,6 +90,30 @@ class Grid (arcade.Sprite):
         self.matrix = [[[] for c in range(self.columns)] for r in range(self.rows)]
 
 
+class Block (arcade.Sprite):
+    """Block class. Spawned on at a random position on the ground and is collected by Kinder.
+    
+    Attributes:
+        :Kinder owner: Defaults to none, changes when block is picked up."""
+    block_count = 0 # Number of blocks on the ground
+
+    def __init__(self):
+        """Constructor"""
+        spritefile = os.path.join(os.path.split(__file__)[0], 'images/blocks.png') 
+        startx = random.uniform(BMARGIN, SCREEN_WIDTH - BMARGIN) # Random x within block margins 
+        starty = random.uniform(BMARGIN, SCREEN_HEIGHT - BMARGIN) # Random y within block margins
+        super().__init__(spritefile, scale=1, center_x = startx, center_y = starty)
+        # Owner attribute
+        self.owner = None
+        Block.block_count += 1
+
+    def draw(self):
+        """Draw functions"""
+        if self.owner: # don't draw if block has an owner,
+            return
+        super().draw()
+
+ 
 class Kinder (arcade.Sprite):
     """Kinder class. Runs around the room and responds to stimuli.
         
@@ -193,36 +212,22 @@ class Kinder (arcade.Sprite):
 
     def add_to_grid(self):
         """Adds self to Kinder.grid.matrix"""
-        grid_pos = self.grid.get_grid_pos(self)
-        self.grid.matrix[grid_pos[0]][grid_pos[1]].append(self)
+        try:
+            grid_pos = self.grid.get_grid_pos(self)
+            self.grid.matrix[grid_pos[0]][grid_pos[1]].append(self)
+        except IndexError as err:
+            raise Exception(f"Kinder #{self._id} (Score: {self.score}) is not on grid.\nPosition = {self.position}")
 
     def update_velocity(self):
         """Updates velocity in a random walk pattern using perlin noise"""
-        if self.isOut('x'):                                                 # If out of xbounds
-            self.run_timer = 5                                              # run for 3 frames
-            if self.left < MARGIN:
-                self.left = MARGIN + 1
-            elif self.right > SCREEN_WIDTH - MARGIN:
-                self.right = SCREEN_WIDTH - MARGIN - 1
-            self.traj_vel[0] = - self.traj_vel[0]                           # and horizontal trajectory
-            self.velocity[0] = - self.velocity[0]                           # negate horizontal velocity
-        if self.isOut('y'):                                                 # Same for ybounds
-            self.run_timer = 5
-            if self.bottom < 0:
-                self.bottom = MARGIN + 1
-            elif self.top > SCREEN_HEIGHT - MARGIN:
-                self.top = SCREEN_HEIGHT - MARGIN - 1
-            self.traj_vel[1] = - self.traj_vel[1]
-            self.velocity[1] = - self.velocity[1]
 
-        if self.run_timer == 0:                                             # If not running from boundaries, move normally
-            new_dir = self.traj_dir + next(self.noise()) * 360              # get new direction
-            self.velocity = self.new_velocity(new_dir)                      # set velocity
-            if random.random() < (1/120):
+        self.collide_with_margins()
+
+        new_dir = self.traj_dir + next(self.noise()) * 360              # get new direction
+        self.velocity = self.new_velocity(new_dir)                      # set velocity
+        if random.random() < (1/120):
                 self.traj_vel = self.velocity
                 self.t = random.randrange(0,10)
-        else:                                                               # If still running, continue running
-            self.run_timer -= 1
 
     def contest(self, opp):
         """Contest function, usually called by the grid, takes another Kinder.
@@ -265,7 +270,7 @@ class Kinder (arcade.Sprite):
         """
         return [v*self.speed for v in mathutils.dir2vel(direction)]
 
-    def isOut(self, mode = None):
+    def collide_with_margins(self):
         """Is sprite hit box out of bounds? Returns Boolean
         
         :mode: the coordinates to check
@@ -273,16 +278,19 @@ class Kinder (arcade.Sprite):
             Use 'x' to check left and right bounds.
             Use 'y' to check top and bottom bounds.
         """
+        if self.left < MARGIN:
+            self.left = MARGIN + 1
+            self.traj_vel[0] *= -1
+        if self.right > SCREEN_WIDTH - MARGIN:
+            self.right = SCREEN_WIDTH - MARGIN - 1
+            self.traj_vel[0] *= -1
 
-        outx = (self.left < MARGIN or self.right > (SCREEN_WIDTH - MARGIN))
-        outy = (self.bottom < MARGIN or self.top > (SCREEN_HEIGHT - MARGIN))
-
-        if mode == 'x':
-            return outx
-        if mode == 'y':
-            return outy
-        else:
-            return outx or outy
+        if self.bottom < MARGIN:
+            self.bottom = MARGIN + 1
+            self.traj_vel[1] *= -1
+        if self.top > SCREEN_HEIGHT - MARGIN:
+            self.top = SCREEN_HEIGHT - MARGIN - 1
+            self.traj_vel[1] *= -1
         
     @property
     def traj_dir(self):
@@ -300,30 +308,7 @@ class Kinder (arcade.Sprite):
         yield self.perlin(self.t)
 
 
-class Block (arcade.Sprite):
-    """Block class. Spawned on at a random position on the ground and is collected by Kinder.
-    
-    Attributes:
-        :Kinder owner: Defaults to none, changes when block is picked up."""
-    block_count = 0 # Number of blocks on the ground
-
-    def __init__(self):
-        """Constructor"""
-        spritefile = os.path.join(os.path.split(__file__)[0], 'images/blocks.png') 
-        startx = random.uniform(BMARGIN, SCREEN_WIDTH - BMARGIN) # Random x within block margins 
-        starty = random.uniform(BMARGIN, SCREEN_HEIGHT - BMARGIN) # Random y within block margins
-        super().__init__(spritefile, scale=1, center_x = startx, center_y = starty)
-        # Owner attribute
-        self.owner = None
-        Block.block_count += 1
-
-    def draw(self):
-        """Draw functions"""
-        if self.owner: # don't draw if block has an owner,
-            return
-        super().draw()
-
-        
+       
 class ScoreLabel ():
     """ScoreLabel object. Assigned to a parent Kinder at construction and assigned a score to display.
     Manages and updates a list of Digit objects which are shown on screen above the sprite.
@@ -449,10 +434,13 @@ class Sim(arcade.Window):
         Kinder.grid.update() # Check for contests and clear grid
 
     def on_key_press(self, symbol, modifiers):
+        """Triggered by key press event"""
         if symbol == arcade.key.SPACE:
             Kinder.grid.print_matrix()
-            self.paused = not self.paused
+            self.pause()
         
+    def pause(self):
+        self.paused = not self.paused
 
     def on_draw(self):
         """Draw function"""
@@ -488,7 +476,11 @@ def main():
     sim = Sim(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     sim.setup()
     sim.set_update_rate(1/FPS)
-    arcade.run()    
+    try:
+        arcade.run()    
+    except Exception as err:
+        print(err)
+        sim.pause()
 
 if __name__ == "__main__":
     main()
