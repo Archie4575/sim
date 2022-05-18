@@ -3,7 +3,7 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.6.0
+Version: 1.0.0
 License: GNU GPL
 """
 
@@ -50,7 +50,7 @@ class Grid (arcade.Sprite):
 
     def update(self):
         """Checks for two kinder objects in the same cell before randomly picking one to contest another"""
-        if Kinder.mode == 1:
+        if Kinder.mode == 1 and False: # Contests not implemented yet
             for r, row in enumerate(self.matrix):
                 for c, cell in enumerate(row):        
                     uncontested = [k for k in cell if not k.inContest]

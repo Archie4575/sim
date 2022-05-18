@@ -1,4 +1,4 @@
-The Kinderdrome
+The Kinderdrome v1.0
 ===============
 Author: Archer Fabling  
 Contact:  <20885436@student.curtin.edu.au>  
@@ -7,12 +7,9 @@ GitHub: https://github.com/Archie4575
 ## Synopsis
 
 A simulation of kindergarten kids running around a classroom and picking up blocks.  
-The simulation has several modes:  
+This verion of the simulation has only two modes:  
 - Block Surplus - Kindergarteners meander and collect blocks upon collision  
-- Block Saturation - Kindergarteners start to contest ecah other and snatch each others' blocks when all blocks have been collected.  
-- Nap Time - All kindergarteners drop their blocks and find a place to rest.   
-
-In a contest between two kindergarteners, the kindergartener with the most blocks has a better chance of winning the contest. This is designed to simulate a system of inequal distribution where the rich get richer and should, if ran long enough, produce a Pareto distribution of blocks in which the top 20% of kinders have accumulated approximately 80% of the blocks. To test this, statistics about the distribution of wealth are printed to standard out every time the nap-time is entered by the user and the economy of blocks is reset. 
+- Block Saturation - No more blocks left on the ground
 
 ## Installation
 
@@ -86,3 +83,4 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.5.3 - 17/05/2022 - New Docstrings  
 0.5.4 - 17/05/2022 - Change to Grid.print_matrix() and Kinder boundary collisions  
 0.6.0 - 18/05/2022 - CLI implemented  
+1.0.0 - 18/05/2022 - SCENARIO 1: Kinder collected blocks but don't snatch
