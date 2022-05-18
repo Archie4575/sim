@@ -3,13 +3,14 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.7.1
+Version: 0.8.0
 License: GNU GPL
 """
 
 try:
     import arcade
     from perlin_noise import PerlinNoise
+    import matplotlib.pyplot as plt
 except ModuleNotFoundError as err:
     print(err)
     print("The right modules haven't been installed yet.\nTry running \"python3 -m pip install -r requirements.txt\" to install the correct pacakages. (use \"requirements_macos.txt\" on Mac)")
@@ -204,41 +205,7 @@ class Kinder (arcade.Sprite):
         """Draw function. Draws the sprite then their scoreLabels"""
         super().draw()
         self.label.update()
-
-    def pickup(self, block: Block):
-        """Picks up the block"""
-        block.owner = self
-        print(f"Kinder #{self._id} picked up a block. \tScore = {self.score} \tRemaining = {Block.block_count}")
-        block.position = (-50, -50) # move off screen to prevent further collisions
-        self.blocks.append(block)
-
-        self.score += 1
-        Block.block_count -= 1
-        if Block.block_count == 0: # If no blocks left..
-            Kinder.mode = Kinder.MODES["block_saturation"] 
-            print("Zero blocks left! Entering \"Block Saturation\" mode!")
-
-    def snatch(self, victim):
-        """Snatch function, used in contests.
-        
-        :param Kinder victim: victim of snatch
-        :param int amount: number of blocks to be snatched
-        """
-        amount = min(Kinder.snatch_amount, victim.score)
-
-        for _ in range(amount):
-            self.blocks.append(victim.blocks.pop()) # Pop from their stack, push to yours
-        # Update scores
-        self.score += amount
-        victim.score -= amount
-
-        # Update labels
-        self.label.update()
-        victim.label.update()
-
-        # Log transaction
-        print(f"#{self._id} snatched {amount} blocks from #{victim._id}")
-
+    
     def add_to_grid(self):
         """Adds self to Kinder.grid.matrix"""
         try:
@@ -255,6 +222,19 @@ class Kinder (arcade.Sprite):
         if random.random() < (1/120):
                 self.traj_vel = self.velocity
                 self.t = random.randrange(0,10)
+
+    def pickup(self, block: Block):
+        """Picks up the block"""
+        block.owner = self
+        print(f"Kinder #{self._id} picked up a block. \tScore = {self.score} \tRemaining = {Block.block_count}")
+        block.position = (-50, -50) # move off screen to prevent further collisions
+        self.blocks.append(block)
+
+        self.score += 1
+        Block.block_count -= 1
+        if Block.block_count == 0: # If no blocks left..
+            Kinder.mode = Kinder.MODES["block_saturation"] 
+            print("Zero blocks left! Entering \"Block Saturation\" mode!")
 
     def contest(self, opp):
         """Contest function, usually called by the grid, takes another Kinder.
@@ -287,6 +267,27 @@ class Kinder (arcade.Sprite):
         else:
             opp.isSnatcher = True
             self.isSnatcher = False
+
+    def snatch(self, victim):
+        """Snatch function, used in contests.
+        
+        :param Kinder victim: victim of snatch
+        :param int amount: number of blocks to be snatched
+        """
+        amount = min(Kinder.snatch_amount, victim.score)
+
+        for _ in range(amount):
+            self.blocks.append(victim.blocks.pop()) # Pop from their stack, push to yours
+        # Update scores
+        self.score += amount
+        victim.score -= amount
+
+        # Update labels
+        self.label.update()
+        victim.label.update()
+
+        # Log transaction
+        print(f"#{self._id} snatched {amount} blocks from #{victim._id}")  
 
     def point_to_sprite(self, sprite: arcade.Sprite):
         """Sets the velocity to point to a given sprite
@@ -346,6 +347,7 @@ class Kinder (arcade.Sprite):
         """Perlin noise generator function"""
         self.t += 1/200 * self.speed # Needs rethinking in terms of FPS
         yield self.perlin(self.t)
+
 
 class ScoreLabel (): 
     """ScoreLabel object. Assigned to a parent Kinder at construction and assigned a score to display.
@@ -477,6 +479,9 @@ class Sim(arcade.Window):
         if self.paused:
             return
 
+        if self.framecount == self.FPS * 90:
+            self.print_stats()
+
         self.framecount += 1
         Kinder.grid.clear()
         for kinder in self.kinder_list:
@@ -486,8 +491,14 @@ class Sim(arcade.Window):
     def on_key_press(self, symbol, modifiers):
         """Triggered by key press event"""
         if symbol == arcade.key.SPACE:
-            Kinder.grid.print_matrix()
+            if not self.paused:
+                self.print_stats()
             self.pause()
+
+        if symbol == arcade.key.Q:
+            arcade.exit()
+            self.print_stats()
+
         
     def pause(self):
         self.paused = not self.paused
@@ -520,6 +531,44 @@ class Sim(arcade.Window):
         paths = [os.path.join(sprite_dir, image) for image in images] # form full paths
 
         return paths
+
+    def print_stats(self):
+        data = {k._id: k.score for k in self.kinder_list}
+        print(self.twenty_eighty(data))
+        self.generate_bar_graph(data)
+
+    def generate_bar_graph(self, data: dict):
+        """Generates a bar graph with Kinder IDs along the x-axis and their respective score on the y-axis.
+        
+        :param dict data: data in dictionary form
+        """
+        ranked_data = {rank + 1: datapoint for rank, datapoint in enumerate(sorted(data.items(), key=lambda item: item[1])[::-1])}
+        xvalues = list(ranked_data.keys())
+        yvalues = [datapoint[1] for rank, datapoint in ranked_data.items()]
+        labels = [datapoint[0] for rank, datapoint in ranked_data.items()]
+
+        with plt.style.context(('dark_background')):
+            plt.figure(1)
+            plt.bar(x=xvalues, height=yvalues, data=labels)
+            plt.ylabel("Blocks")
+            plt.xlabel("Rank")
+            plt.title("Block distribution")
+            plt.show()
+
+    def twenty_eighty(self, data: dict):
+        sorted_items = list(sorted(data.items(), key = lambda item: -item[1]))  # Sorts items by value
+        
+        number_in_top = int(round(len(sorted_items) * 0.20))   # multiplys and rounds
+        top = sorted_items[:number_in_top]  # Top twenty percentage
+
+        total = sum([item[1] for item in sorted_items])
+        top_total = sum([item[1] for item in top])
+
+        percentile = number_in_top/len(sorted_items)
+        share = top_total/total
+
+        result = f"The top {percentile*100}% of Kindergarteners have {share*100}% of the Blocks."
+        return result
 
 
 def main():
