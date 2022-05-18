@@ -42,6 +42,9 @@ Control the number of Kindergarteners spawned: (Default=20)
 Control the number of Blocks available: (Default=40)
 > -b **INT**, --numblocks **INT**
 
+Control the maxiumum number of Blocks that can be snatched in a contest (Default=2):
+> -s **INT**, --snatchamount **INT**
+
 Example: Spawns 15 Kindergarteners and 100 blocks.
 > python3 main.py -k 15 -b 100
 
@@ -87,3 +90,4 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.5.4 - 17/05/2022 - Change to Grid.print_matrix() and Kinder boundary collisions  
 0.6.0 - 18/05/2022 - CLI implemented  
 0.7.0 - 18/05/2022 - Snatching implemented
+0.7.1 - 18/05/2022 - Updated README 
