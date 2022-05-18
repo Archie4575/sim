@@ -86,3 +86,4 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.5.3 - 17/05/2022 - New Docstrings  
 0.5.4 - 17/05/2022 - Change to Grid.print_matrix() and Kinder boundary collisions  
 0.6.0 - 18/05/2022 - CLI implemented  
+0.7.0 - 18/05/2022 - Snatching implemented

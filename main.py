@@ -3,7 +3,7 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.6.0
+Version: 0.7.0
 License: GNU GPL
 """
 
@@ -55,8 +55,12 @@ class Grid (arcade.Sprite):
                 for c, cell in enumerate(row):        
                     uncontested = [k for k in cell if not k.inContest]
                     if uncontested.__len__() > 1:
-                        self.print_matrix()
-                        cell.pop().contest(random.choice(cell)) # Last Kinder in list contest a random Kinder in the cellx
+                        cell = [k for k in cell if k.score > 0] # Filter out those who have none
+                        if len(cell) > 0:
+                            first_contestant = cell.pop() # Pick one kinder
+                            candidates = [kinder for kinder in cell if kinder != first_contestant.last_contested] # Filter so two kinder can't contest twice in a row
+                            if len(candidates) > 0:
+                                first_contestant.contest(random.choice(candidates)) # Contest a random valid Kinder candidate
 
     def print_matrix(self):
         """Prints the grid matrix"""
@@ -130,6 +134,7 @@ class Kinder (arcade.Sprite):
 
     count = 0
     grid = None
+    snatch_amount = 2
 
     def __init__(self, spritefile = "images/dummy.png", scaling = 1):
         """Constructor"""
@@ -159,6 +164,9 @@ class Kinder (arcade.Sprite):
         # Initialise list of blocks
         self.blocks = []
         self.score = 0
+        # Contest variables
+        self.isSnatcher = False
+        self.last_contested = None
         # Initialise ScoreLabel object
         self.label = ScoreLabel(self)
 
@@ -172,10 +180,14 @@ class Kinder (arcade.Sprite):
             if self.inContest:
                self.contest_timer -= 1
                if self.contest_timer == 30:
+                   if self.isSnatcher:
+                       self.snatch(self.opponent)
+                       self.isSnatcher = False
                    self.traj_vel = mathutils.opposite(self.traj_vel)
                    self.velocity = self.traj_vel
                elif self.contest_timer <= 0:
                    self.inContest = False
+                   self.last_contested = self.opponent
             else:
                 self.update_velocity()
         
@@ -206,6 +218,27 @@ class Kinder (arcade.Sprite):
             Kinder.mode = Kinder.MODES["block_saturation"] 
             print("Zero blocks left! Entering \"Block Saturation\" mode!")
 
+    def snatch(self, victim):
+        """Snatch function, used in contests.
+        
+        :param Kinder victim: victim of snatch
+        :param int amount: number of blocks to be snatched
+        """
+        amount = min(Kinder.snatch_amount, victim.score)
+
+        for _ in range(amount):
+            self.blocks.append(victim.blocks.pop()) # Pop from their stack, push to yours
+        # Update scores
+        self.score += amount
+        victim.score -= amount
+
+        # Update labels
+        self.label.update()
+        victim.label.update()
+
+        # Log transaction
+        print(f"#{self._id} snatched {amount} blocks from #{victim._id}")
+
     def add_to_grid(self):
         """Adds self to Kinder.grid.matrix"""
         try:
@@ -233,6 +266,10 @@ class Kinder (arcade.Sprite):
         self.point_to_sprite(opp)
         opp.point_to_sprite(self)
 
+        # Set each other as opponents
+        self.opponent = opp
+        opp.opponent = self
+
         # Halt movement
         self.stop()
         opp.stop()
@@ -240,6 +277,16 @@ class Kinder (arcade.Sprite):
         # Set bools and timers
         self.inContest, opp.inContest = True, True
         self.contest_timer, opp.contest_timer = 90, 90
+
+        # Pick which Kinder will win the contest
+        # Theory: if A has 7 blocks and B has 3 blocks, A has a 70% (7/(7+3)) of winning the contest
+        winchance = self.score/(self.score+opp.score) 
+        if random.random() < winchance:
+            self.isSnatcher = True
+            opp.isSnatcher = False
+        else:
+            opp.isSnatcher = True
+            self.isSnatcher = False
 
     def point_to_sprite(self, sprite: arcade.Sprite):
         """Sets the velocity to point to a given sprite
@@ -333,10 +380,12 @@ class ScoreLabel ():
         """Update function"""
         if self.score != self._lastscore: # If change in score
             self.set_digits(self.score) # Repopulate digit_sprites
+        elif self.score == 0:
+            self.set_digits()
         self.update_digit_positions() # Position digits above the parent sprite
         self.digit_sprites.draw()
 
-    def set_digits(self, score):
+    def set_digits(self, score=''):
         """Repopulates the digit sprite list with the appropriate digits"""
         self.digit_sprites.clear()
 
@@ -396,12 +445,14 @@ class Sim(arcade.Window):
     MARGIN = 2
     FPS = 60
 
-    def __init__(self, numkinder, numblocks):
+    def __init__(self, args):
         """Constructor"""
         super().__init__(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, self.SCREEN_TITLE, resizable = False)
 
-        self.numkinder = numkinder
-        self.numblocks = numblocks
+        self.numkinder = args.numkinder
+        self.numblocks = args.numblocks
+        Kinder.snatch_amount = args.snatchamount
+
         self.paused = False
         self.framecount = 0
 
@@ -473,11 +524,12 @@ class Sim(arcade.Window):
 
 def main():
     parser = argparse.ArgumentParser(description="Kinderdrome simulation using python arcade package")
-    parser.add_argument("-k", "--numkinder", default=20, metavar='INT', help="Number of Kindergarteners to spawn. Default=20")
-    parser.add_argument("-b", "--numblocks", default=40, metavar='INT', help="Number of Blocks to spawn. Default=40")
+    parser.add_argument("-k", "--numkinder", type=int, default=20, metavar='INT', help="Number of Kindergarteners to spawn. Default=20")
+    parser.add_argument("-b", "--numblocks", type=int, default=40, metavar='INT', help="Number of Blocks to spawn. Default=40")
+    parser.add_argument("-s", "--snatchamount", type=int, default=2, metavar='INT', help="Number of Blocks snatched by the winning Kinder of a contest. Default=2")
     args = parser.parse_args()
 
-    sim = Sim(int(args.numkinder), int(args.numblocks))
+    sim = Sim(args)
     sim.setup()
     sim.set_update_rate(1/Sim.FPS)
 
