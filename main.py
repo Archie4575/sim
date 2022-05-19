@@ -3,7 +3,7 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.8.0
+Version: 0.8.1
 License: GNU GPL
 """
 
@@ -16,7 +16,9 @@ except ModuleNotFoundError as err:
     print("The right modules haven't been installed yet.\nTry running \"python3 -m pip install -r requirements.txt\" to install the correct pacakages. (use \"requirements_macos.txt\" on Mac)")
     exit()
 
+import sys
 import random
+random.seed(a="naughty", version=2)  # Reproducability
 import os
 import mathutils
 import argparse
@@ -60,6 +62,7 @@ class Grid (arcade.Sprite):
                         if len(cell) > 0:
                             first_contestant = cell.pop() # Pick one kinder
                             candidates = [kinder for kinder in cell if kinder != first_contestant.last_contested] # Filter so two kinder can't contest twice in a row
+                            if first_contestant.score == 1: candidates = [kinder for kinder in candidates if kinder.score > 1]
                             if len(candidates) > 0:
                                 first_contestant.contest(random.choice(candidates)) # Contest a random valid Kinder candidate
 
@@ -229,6 +232,7 @@ class Kinder (arcade.Sprite):
         print(f"Kinder #{self._id} picked up a block. \tScore = {self.score} \tRemaining = {Block.block_count}")
         block.position = (-50, -50) # move off screen to prevent further collisions
         self.blocks.append(block)
+        Sim.blocks_list.remove(block)
 
         self.score += 1
         Block.block_count -= 1
@@ -259,8 +263,9 @@ class Kinder (arcade.Sprite):
         self.contest_timer, opp.contest_timer = 90, 90
 
         # Pick which Kinder will win the contest
-        # Theory: if A has 7 blocks and B has 3 blocks, A has a 70% (7/(7+3)) of winning the contest
-        winchance = self.score/(self.score+opp.score) 
+        # Method 1: A has a 70% change of getting 70% of B's blocks, is A has 7 and B has 3
+        winchance = self.score/(self.score+opp.score)
+
         if random.random() < winchance:
             self.isSnatcher = True
             opp.isSnatcher = False
@@ -274,20 +279,22 @@ class Kinder (arcade.Sprite):
         :param Kinder victim: victim of snatch
         :param int amount: number of blocks to be snatched
         """
-        amount = min(Kinder.snatch_amount, victim.score)
+        amount = round((self.score/(self.score+victim.score))*(victim.score))
 
+        snatched = 0
         for _ in range(amount):
-            self.blocks.append(victim.blocks.pop()) # Pop from their stack, push to yours
-        # Update scores
-        self.score += amount
-        victim.score -= amount
+            if victim.score > 1:
+                self.blocks.append(victim.blocks.pop()) # Pop from their stack, push to yours
+                self.score += 1
+                snatched += 1
+                victim.score -= 1
 
         # Update labels
         self.label.update()
         victim.label.update()
 
         # Log transaction
-        print(f"#{self._id} snatched {amount} blocks from #{victim._id}")  
+        print(f"#{self._id} snatched {snatched} blocks from #{victim._id}")  
 
     def point_to_sprite(self, sprite: arcade.Sprite):
         """Sets the velocity to point to a given sprite
@@ -453,7 +460,8 @@ class Sim(arcade.Window):
 
         self.numkinder = args.numkinder
         self.numblocks = args.numblocks
-        Kinder.snatch_amount = args.snatchamount
+        self.runtime = args.runtime
+        self.quiet = args.quiet
 
         self.paused = False
         self.framecount = 0
@@ -479,10 +487,10 @@ class Sim(arcade.Window):
         if self.paused:
             return
 
-        if self.framecount == self.FPS * 90:
-            self.print_stats()
-
         self.framecount += 1
+        if self.framecount == self.FPS * self.runtime:
+            self.exit()
+
         Kinder.grid.clear()
         for kinder in self.kinder_list:
             kinder.update(delta_time)
@@ -491,17 +499,18 @@ class Sim(arcade.Window):
     def on_key_press(self, symbol, modifiers):
         """Triggered by key press event"""
         if symbol == arcade.key.SPACE:
-            if not self.paused:
-                self.print_stats()
             self.pause()
 
         if symbol == arcade.key.Q:
-            arcade.exit()
-            self.print_stats()
+            self.exit()
 
-        
     def pause(self):
         self.paused = not self.paused
+
+    def exit(self):
+        self.close()
+        arcade.exit()
+        self.print_stats()
 
     def on_draw(self):
         """Draw function"""
@@ -535,7 +544,8 @@ class Sim(arcade.Window):
     def print_stats(self):
         data = {k._id: k.score for k in self.kinder_list}
         print(self.twenty_eighty(data))
-        self.generate_bar_graph(data)
+        if not self.quiet:
+            self.generate_bar_graph(data)
 
     def generate_bar_graph(self, data: dict):
         """Generates a bar graph with Kinder IDs along the x-axis and their respective score on the y-axis.
@@ -574,8 +584,9 @@ class Sim(arcade.Window):
 def main():
     parser = argparse.ArgumentParser(description="Kinderdrome simulation using python arcade package")
     parser.add_argument("-k", "--numkinder", type=int, default=20, metavar='INT', help="Number of Kindergarteners to spawn. Default=20")
-    parser.add_argument("-b", "--numblocks", type=int, default=40, metavar='INT', help="Number of Blocks to spawn. Default=40")
-    parser.add_argument("-s", "--snatchamount", type=int, default=2, metavar='INT', help="Number of Blocks snatched by the winning Kinder of a contest. Default=2")
+    parser.add_argument("-b", "--numblocks", type=int, default=100, metavar='INT', help="Number of Blocks to spawn. Default=40")
+    parser.add_argument("-t", "--runtime", type=int, default=0, metavar='INT', help="Seconds to run the simulation for. Default=0 (infinite)")
+    parser.add_argument("-q", "--quiet", action="store_true", default=False, help="Suppress statistics graph at the end of the runtime.")
     args = parser.parse_args()
 
     sim = Sim(args)

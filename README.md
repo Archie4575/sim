@@ -39,14 +39,23 @@ View help:
 Control the number of Kindergarteners spawned: (Default=20)
 > -k **INT**, --numkinder **INT**  
 
-Control the number of Blocks available: (Default=40)
+Control the number of Blocks available: (Default=100)
 > -b **INT**, --numblocks **INT**
 
-Control the maxiumum number of Blocks that can be snatched in a contest (Default=2):
-> -s **INT**, --snatchamount **INT**
+Control the number of seconds the simulation runs for: (Default=0 \[infinite\])
+> -t **INT**, --runtime **INT**
 
-Example: Spawns 15 Kindergarteners and 100 blocks.
-> python3 main.py -k 15 -b 100
+Suppress the graph at the end: (Default=False)
+> -q, --quiet
+
+Example: Spawns 15 Kindergarteners and 110 blocks and runs for 40 seconds.
+> python3 main.py -k 15 -b 110 -t 40
+
+### Controls
+
+Keys:
+- `q` - Stop the simluation and print statistics
+- `SPACE` - Pause the simulation
 
 ## Content
 
@@ -84,11 +93,12 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.4.1 - 04/05/2022 - Implemented contest model, sim framecount, and kinder ids  
 0.4.2 - 10/05/2022 - Updated packages  
 0.5.0 - 11/05/2022 - Implemented `Block` objects  
-0.5.1 - 12/05/2022 - Fixing speed for score labels and updated README
+0.5.1 - 12/05/2022 - Fixing speed for score labels and updated README  
 0.5.2 - 16/05/2022 - Added Digits and ScoreLabel objects and Grid and Block textures  
 0.5.3 - 17/05/2022 - New Docstrings  
 0.5.4 - 17/05/2022 - Change to Grid.print_matrix() and Kinder boundary collisions  
 0.6.0 - 18/05/2022 - CLI implemented  
-0.7.0 - 18/05/2022 - Snatching implemented
+0.7.0 - 18/05/2022 - Snatching implemented  
 0.7.1 - 18/05/2022 - Updated README  
-0.8.0 - 18/05/2022 - Statistics implmented  
+0.8.0 - 18/05/2022 - Statistics implemented  
+0.8.1 - 18/05/2022 - Changed snatch mechanics  
