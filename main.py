@@ -3,9 +3,15 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.8.1
+Version: 0.9.0
 License: GNU GPL
 """
+
+import random
+random.seed(a="naughty", version=2)  # Reproducability
+import os
+import mathutils
+import argparse
 
 try:
     import arcade
@@ -13,32 +19,32 @@ try:
     import matplotlib.pyplot as plt
 except ModuleNotFoundError as err:
     print(err)
-    print("The right modules haven't been installed yet.\nTry running \"python3 -m pip install -r requirements.txt\" to install the correct pacakages. (use \"requirements_macos.txt\" on Mac)")
+    print("The right modules haven't been installed yet.\n Try running \
+\"python3 -m pip install -r requirements.txt\" to install the correct \
+pacakages. (use \"requirements_macos.txt\" on Mac)")
     exit()
 
-import sys
-import random
-random.seed(a="naughty", version=2)  # Reproducability
-import os
-import mathutils
-import argparse
+def abs_path(relative_path):
+    """Returns of absolute path given a path relative to this file."""
+    return os.path.join(os.path.split(__file__)[0], relative_path)
+
 
 class Grid (arcade.Sprite):
     """Grid class. A static background sprite that has a matrix of cells containing the Kinder objects currently
     in said grid area. i.e. If two Kinder objects has center_x and center_y coordinates that lie within the same
-    grid area, their objects will be in the same matrix cell. This is useful for initialising a contest for 
+    grid area, their objects will be in the same matrix cell. This is useful for initialising a contest for
     mode 1 (block saturation).
-    
+ 
     :param int rows: numbers of rows
     :param int columns: number of columns
-    
+
     Attributes:
         :matrix: matrix of cells containing Kinder objects
         :division: side length of one grid square in pixels
     """
     def __init__(self, rows: int = 9, columns: int = 16):
         """Constructor"""
-        spritefile = os.path.join(os.path.split(__file__)[0], 'images/floor.png') # Form absolute path
+        spritefile = abs_path('images/floor.png')  # Form absolute path
         scaling = 1
         super().__init__(spritefile, scaling)
 
@@ -47,24 +53,25 @@ class Grid (arcade.Sprite):
 
         self.rows = rows
         self.columns = columns
-        self.division = self.width // self.columns # Width of a square
+        self.division = self.width // self.columns  # Width of a square
 
-        self.matrix = [[[] for c in range(columns)] for r in range(rows)] # Initialise empty matrix
+        self.matrix = [[[] for c in range(columns)] for r in range(rows)]  # Initialise empty matrix
 
     def update(self):
         """Checks for two kinder objects in the same cell before randomly picking one to contest another"""
         if Kinder.mode == 1:
             for r, row in enumerate(self.matrix):
-                for c, cell in enumerate(row):        
+                for c, cell in enumerate(row):
                     uncontested = [k for k in cell if not k.inContest]
                     if uncontested.__len__() > 1:
-                        cell = [k for k in cell if k.score > 0] # Filter out those who have none
+                        cell = [k for k in cell if k.score > 0]  # Filter out those who have none
                         if len(cell) > 0:
-                            first_contestant = cell.pop() # Pick one kinder
+                            first_contestant = cell.pop()  # Pick one kinder
                             candidates = [kinder for kinder in cell if kinder != first_contestant.last_contested] # Filter so two kinder can't contest twice in a row
-                            if first_contestant.score == 1: candidates = [kinder for kinder in candidates if kinder.score > 1]
+                            if first_contestant.score == 1:  # Filters so two 1's don't contest each other
+                                candidates = [kinder for kinder in candidates if kinder.score > 1]
                             if len(candidates) > 0:
-                                first_contestant.contest(random.choice(candidates)) # Contest a random valid Kinder candidate
+                                first_contestant.contest(random.choice(candidates))  # Contest a random valid Kinder candidate
 
     def print_matrix(self):
         """Prints the grid matrix"""
@@ -98,7 +105,7 @@ class Block (arcade.Sprite):
 
     def __init__(self):
         """Constructor"""
-        spritefile = os.path.join(os.path.split(__file__)[0], 'images/blocks.png') 
+        spritefile = abs_path('images/blocks.png') 
         startx = random.uniform(self.BMARGIN, Sim.SCREEN_WIDTH - self.BMARGIN) # Random x within block margins 
         starty = random.uniform(self.BMARGIN, Sim.SCREEN_HEIGHT - self.BMARGIN) # Random y within block margins
         super().__init__(spritefile, scale=1, center_x = startx, center_y = starty)
@@ -370,7 +377,7 @@ class ScoreLabel ():
         :score: alias for the parent Kinder's score
         :_lastscore: used to detect frame by frame changes to the score
     """
-    font_file = os.path.join(os.path.split(__file__)[0], 'images/digits.png')
+    font_file = abs_path('images/digits_black.png')
     digit_width = 18
     digit_height = 10
 
@@ -417,7 +424,7 @@ class ScoreLabel ():
             digit.bottom = start_y
             digit.left = start_x + index * self.digit_width
 
-            
+
 class Digit (arcade.Sprite):
     """Digit object. Sprite with digit texture.
     
@@ -431,6 +438,35 @@ class Digit (arcade.Sprite):
                 image_y = 0,
                 image_width = ScoreLabel.digit_width,
                 image_height = ScoreLabel.digit_height)
+
+
+class HUD (arcade.Sprite):
+    """Heads Up Display. Overalay to show controls."""
+
+    def __init__(self):
+        starter_hud = abs_path("images/HUDN.png")
+        super().__init__(starter_hud, scale=1)
+        self.textures.append(arcade.load_texture(
+                abs_path("images/HUDP.png"),
+                x=0,
+                y=0,
+                width=1280,
+                height=720,
+                flipped_horizontally=False,
+                flipped_vertically=False,
+                flipped_diagonally=False,
+                hit_box_algorithm="Simple",
+                hit_box_detail=4.5,
+            )
+        )
+        self.left = 0
+        self.bottom = 0
+        self.pause = False
+    
+    def update(self):
+        """Update function. Toggles between textures 0 and 1"""
+        self.pause = not self.pause
+        self.set_texture(int(self.pause))
 
 
 class Sim(arcade.Window):
@@ -451,7 +487,7 @@ class Sim(arcade.Window):
     SCREEN_TITLE = "The Kinderdrome"
     SCREEN_WIDTH = 1280
     SCREEN_HEIGHT = 720
-    MARGIN = 2
+    MARGIN = 4
     FPS = 60
 
     def __init__(self, args):
@@ -466,10 +502,12 @@ class Sim(arcade.Window):
         self.paused = False
         self.framecount = 0
 
+        self.hud = HUD()
+
 
     def setup(self):
         """Constructor"""
-        arcade.set_background_color( (244, 235, 208) )  # F4EBD0 (Off-White)
+        arcade.set_background_color( (0,0,0) )  # F4EBD0 (Off-White)
 
         sprites = self.get_kinder_sprites()  # Load sprite filenames
         for n in range(self.numkinder):  # Populate with Kinder objects
@@ -506,6 +544,7 @@ class Sim(arcade.Window):
 
     def pause(self):
         self.paused = not self.paused
+        self.hud.update()
 
     def exit(self):
         self.close()
@@ -520,7 +559,7 @@ class Sim(arcade.Window):
             block.draw()
         for kinder in self.kinder_list:
            kinder.draw()
-        # self.kinder_list.draw()
+        self.hud.draw()
 
     def get_kinder_sprites(self):
         """Return absolute paths of image files in images/kinder"""
