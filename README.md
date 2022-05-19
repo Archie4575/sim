@@ -1,4 +1,4 @@
-The Kinderdrome
+The Kinderdrome v2
 ===============
 Author: Archer Fabling  
 Contact:  <20885436@student.curtin.edu.au>  
@@ -7,12 +7,11 @@ GitHub: https://github.com/Archie4575
 ## Synopsis
 
 A simulation of kindergarten kids running around a classroom and picking up blocks.  
-The simulation has several modes:  
+The simulation has, again, modes:  
 - Block Surplus - Kindergarteners meander and collect blocks upon collision  
-- Block Saturation - Kindergarteners start to contest ecah other and snatch each others' blocks when all blocks have been collected.  
-- Nap Time - All kindergarteners drop their blocks and find a place to rest.   
+- Block Saturation - Kindergarteners start to contest ecah other and snatch each others' blocks when all blocks have been collected. The snatching mechhanism dictates that both the chance of a kindergartener winning the contest and the gain in blocks as a result of a win depends on its proportion of the total blocks between the two. In essence, the more blocks a kinder has, the greater their expected gain from an interaction. The mathematics of this is elaborated on further in the report.
 
-In a contest between two kindergarteners, the kindergartener with the most blocks has a better chance of winning the contest. This is designed to simulate a system of inequal distribution where the rich get richer and should, if ran long enough, produce a Pareto distribution of blocks in which the top 20% of kinders have accumulated approximately 80% of the blocks. To test this, statistics about the distribution of wealth are printed to standard out every time the nap-time is entered by the user and the economy of blocks is reset. 
+This is designed to simulate a closed system of inequal distribution where the rich get richer while the poor stay poor, and should, if ran long enough, produce a Pareto distribution of blocks in which the top 20% of kinders have accumulated approximately 80% of the blocks. To test this, statistics about the distribution of wealth are printed to standard out every time the nap-time is entered or when the user quits.
 
 ## Installation
 
@@ -103,3 +102,4 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.8.0 - 18/05/2022 - Statistics implemented  
 0.8.1 - 18/05/2022 - Changed snatch mechanics  
 0.9.0 - 19/05/2022 - HUD implemented
+2.0.0 - 19/05/2022 - SCENARIO 2 - Snatching and statistics
