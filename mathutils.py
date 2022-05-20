@@ -1,5 +1,7 @@
+from math import cos, sin, radians, atan, degrees, pi
+from main import SEED
 import random
-from math import cos, sin, radians, atan, degrees
+random.seed(a = SEED, version = 2)
 
 def rand_direction(start: float = 0.0, stop: float = 360.0, mode: str = 'uniform', t: float = 0) -> list:
         """Random direction generator: returns random angle in degrees
@@ -59,6 +61,18 @@ def dir2vel(direction: float = 0) -> list:
 def opposite(velocity: list) -> float:
     """Negates all elements of a list"""
     return [-v for v in velocity]
+
+def rand_point_in_circle(center, radius):
+    angle = random.random() * 2 * pi
+    distance = random.random() * radius
+
+    dx = cos(angle) * distance
+    dy = sin(angle) * distance
+
+    point = [center[0] + dx, center[1] + dy]
+
+    return point
+
 
 if __name__ == '__main__':
     ### Testing rand_direction()

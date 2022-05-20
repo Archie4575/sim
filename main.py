@@ -3,12 +3,15 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 2.0.0
+Version: 0.9.0
 License: GNU GPL
 """
 
+from math import sqrt
 import random
-random.seed(a="naughty", version=2)  # Reproducability
+#SEED = "naughty"
+SEED = "naughtier"
+random.seed(a = SEED, version=2)  # For Reproducability while bug-fixing
 import os
 import mathutils
 import argparse
@@ -119,6 +122,32 @@ class Block (arcade.Sprite):
             return
         super().draw()
 
+
+class Bed (arcade.Sprite):
+    """Bed class.""" 
+    def __init__(self, row, col):
+        super().__init__(abs_path("images/vacant_bed.png"), scale = 1)
+        self.textures.append(arcade.load_texture("images/vacant_bed.png",
+                hit_box_algorithm = "Simple",
+                hit_box_detail=4.5,
+            )
+        )
+        self.isFull = False
+        self.set_pos(row, col)
+
+    def update(self):
+        if self.isFull:
+            self.set_texture(1)
+        else:
+            self.set_texture(0)
+
+        super().__init__()
+
+    def set_pos(self, row, col):
+        div = Kinder.grid.division
+        self.center_y = div * (row + 0.5)
+        self.center_x = div * (col + 0.5)
+
  
 class Kinder (arcade.Sprite):
     """Kinder class. Runs around the room and responds to stimuli.
@@ -180,6 +209,8 @@ class Kinder (arcade.Sprite):
         self.last_contested = None
         # Initialise ScoreLabel object
         self.label = ScoreLabel(self)
+        # Bed variables
+        self.isAsleep = False
 
     def update(self, delta_time):
         """Update the position of the sprite"""
@@ -202,11 +233,20 @@ class Kinder (arcade.Sprite):
             else:
                 self.update_velocity()
         
-        if self.mode == 0:
+        if self.mode == self.MODES['block_surplus']:
             for block in arcade.check_for_collision_with_list(self, Sim.blocks_list):
                 if block.owner:
                     continue
                 self.pickup(block)
+        
+        if self.mode == self.MODES['nap_time'] and not self.isAsleep:
+            if Sim.last_num_beds != Sim.num_beds:
+                bed = self.find_nearest_bed(Sim.available_bed_list)
+                self.point_to_sprite(bed)
+            collisions = arcade.check_for_collision_with_list(self, Sim.available_bed_list)
+            if collisions:
+                self.take_bed(collisions[0])
+
 
         super().update()
         self.add_to_grid()
@@ -302,6 +342,40 @@ class Kinder (arcade.Sprite):
 
         # Log transaction
         print(f"#{self._id} snatched {snatched} blocks from #{victim._id}")  
+
+    def find_nearest_bed(self, bedlist):
+        displacements = [ (bed, (self.center_x - bed.center_x,
+                self.center_y - bed.center_y)) for bed in bedlist]
+        distances = [(n, sqrt(pow(s[1][0],2) + pow(s[1][1],2))) for n, s in enumerate(displacements)]
+        min_index = min(distances, key = lambda distance: distance[1])[0]
+        closest_path = displacements[min_index]
+        closest_bed = closest_path[0]
+
+        return closest_bed
+
+    def drop_blocks(self):
+        print(self.blocks)
+        for block in self.blocks:
+            self.score -= 1
+            print("-1")
+            block.owner = None
+            block.position = mathutils.rand_point_in_circle(center = self.position, radius = self.grid.division)
+            Sim.blocks_list.append(block)
+            Block.block_count += 1
+        self.blocks.clear()
+        self.label.update()
+        print("score: ", self.score)
+
+    def take_bed(self, bed):
+        bed.isFull = True
+        Sim.available_bed_list.remove(bed)
+        Sim.num_beds -= 1
+        self.isAsleep = True
+        self.velocity = (0,0)
+        self.position = bed.position
+    
+    def awake(self):
+        self.isAsleep = False
 
     def point_to_sprite(self, sprite: arcade.Sprite):
         """Sets the velocity to point to a given sprite
@@ -444,7 +518,7 @@ class HUD (arcade.Sprite):
     """Heads Up Display. Overalay to show controls."""
 
     def __init__(self):
-        starter_hud = abs_path("images/HUDN.png")
+        starter_hud = abs_path("images/HUD.png")
         super().__init__(starter_hud, scale=1)
         self.textures.append(arcade.load_texture(
                 abs_path("images/HUDP.png"),
@@ -483,12 +557,20 @@ class Sim(arcade.Window):
 
     blocks_list = arcade.SpriteList()
     kinder_list = arcade.SpriteList()
+    bed_list = arcade.SpriteList()
+    available_bed_list = arcade.SpriteList()
+    last_num_beds = 0
+    num_beds = 0
 
     SCREEN_TITLE = "The Kinderdrome"
     SCREEN_WIDTH = 1280
     SCREEN_HEIGHT = 720
     MARGIN = 4
     FPS = 60
+    framecount = 0
+
+    data_snapshots = {}
+    last_data_snapshot = None
 
     def __init__(self, args):
         """Constructor"""
@@ -500,14 +582,12 @@ class Sim(arcade.Window):
         self.quiet = args.quiet
 
         self.paused = False
-        self.framecount = 0
 
         self.hud = HUD()
 
-
     def setup(self):
         """Constructor"""
-        arcade.set_background_color( (0,0,0) )  # F4EBD0 (Off-White)
+        arcade.set_background_color((0,0,0))
 
         sprites = self.get_kinder_sprites()  # Load sprite filenames
         for n in range(self.numkinder):  # Populate with Kinder objects
@@ -518,8 +598,6 @@ class Sim(arcade.Window):
             block = Block()
             self.blocks_list.append(block)
         
-#        Kinder.mode = 1
-
     def on_update(self, delta_time):
         """Update function"""
         if self.paused:
@@ -529,10 +607,12 @@ class Sim(arcade.Window):
         if self.framecount == self.FPS * self.runtime:
             self.exit()
 
+        self.last_num_beds = self.num_beds
+
         Kinder.grid.clear()
         for kinder in self.kinder_list:
             kinder.update(delta_time)
-        Kinder.grid.update() # Check for contests and clear grid
+        Kinder.grid.update()  # Check for contests 
 
     def on_key_press(self, symbol, modifiers):
         """Triggered by key press event"""
@@ -541,6 +621,25 @@ class Sim(arcade.Window):
 
         if symbol == arcade.key.Q:
             self.exit()
+        
+        if symbol == arcade.key.N:
+            if Kinder.mode == Kinder.MODES['nap_time']:  # From nap time to normal
+                Kinder.mode = Kinder.MODES['block_surplus'] 
+                self.bed_list.clear()
+                self.available_bed_list.clear()
+                for kinder in self.kinder_list:
+                    kinder.awake()
+            else:                                        # Form normal to nap time
+                Kinder.mode = Kinder.MODES['nap_time']
+                self.spawn_beds()
+                self.data_snapshots[self.framecount] = self.get_data()
+                self.last_data_snapshot = self.data_snapshots[self.framecount]
+                for kinder in self.kinder_list:
+                    kinder.drop_blocks()
+                    print("dropping")
+                print("printing")
+                self.print_last_stats()
+                print("printed")
 
     def pause(self):
         self.paused = not self.paused
@@ -555,6 +654,7 @@ class Sim(arcade.Window):
         """Draw function"""
         arcade.start_render()
         Kinder.grid.draw()
+        self.bed_list.draw()
         for block in self.blocks_list:
             block.draw()
         for kinder in self.kinder_list:
@@ -580,11 +680,48 @@ class Sim(arcade.Window):
 
         return paths
 
-    def print_stats(self):
-        data = {k._id: k.score for k in self.kinder_list}
+    def spawn_beds(self):
+        # Sides first
+        for col in [0,15]:
+            for row in range(9):
+                if self.num_beds == self.numkinder: return
+                bed = Bed(row, col)
+                self.bed_list.append(bed)
+                self.available_bed_list.append(bed)
+                self.num_beds += 1
+        
+        # Then top
+        for row in [0,8]:
+            for col in range(1,15):
+                if self.num_beds == self.numkinder: return
+                bed = Bed(row, col)
+                self.bed_list.append(bed)
+                self.available_bed_list.append(bed)
+                self.num_beds += 1
+
+    def get_data(self):
+        if self.kinder_list:
+            return {k._id: k.score for k in self.kinder_list}
+        else:
+            return None
+
+    def print_stats(self, data = None):
+        if data == None:
+            data = self.get_data()
+            self.data_snapshots[self.framecount] = data
+            self.last_data_snapshot = data
+
         print(self.twenty_eighty(data))
+
+
         if not self.quiet:
             self.generate_bar_graph(data)
+        
+    def print_last_stats(self):
+        if self.last_data_snapshot:
+            self.print_stats(self.last_data_snapshot)
+        else:
+            self.print_stats()
 
     def generate_bar_graph(self, data: dict):
         """Generates a bar graph with Kinder IDs along the x-axis and their respective score on the y-axis.
@@ -596,12 +733,19 @@ class Sim(arcade.Window):
         yvalues = [datapoint[1] for rank, datapoint in ranked_data.items()]
         labels = [datapoint[0] for rank, datapoint in ranked_data.items()]
 
+        title = f"Block Distribution at Frame Count {self.framecount}, Kinder={self.numkinder}, Blocks={self.numblocks}"
+        filename = f"chart-k{self.numkinder}-b{self.numblocks}-f{self.framecount}"
+
+        if SEED:
+            title += f"\n[SEED={SEED}]"
+
         with plt.style.context(('dark_background')):
             plt.figure(1)
             plt.bar(x=xvalues, height=yvalues, data=labels)
             plt.ylabel("Blocks")
             plt.xlabel("Rank")
-            plt.title("Block distribution")
+            plt.title(title)
+            plt.savefig(f"output/{filename}")
             plt.show()
 
     def twenty_eighty(self, data: dict):
