@@ -3,17 +3,17 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.9.0
+Version: 0.9.1
 License: GNU GPL
 """
 
-from math import sqrt
 import random
 SEED = "naughty"
 random.seed(a = SEED, version=2)  # For Reproducability while bug-fixing
 import os
 import mathutils
 import argparse
+from math import sqrt
 
 try:
     import arcade
@@ -353,17 +353,14 @@ class Kinder (arcade.Sprite):
         return closest_bed
 
     def drop_blocks(self):
-        print(self.blocks)
         for block in self.blocks:
             self.score -= 1
-            print("-1")
             block.owner = None
             block.position = mathutils.rand_point_in_circle(center = self.position, radius = self.grid.division)
             Sim.blocks_list.append(block)
             Block.block_count += 1
         self.blocks.clear()
         self.label.update()
-        print("score: ", self.score)
 
     def take_bed(self, bed):
         bed.isFull = True
@@ -714,7 +711,6 @@ class Sim(arcade.Window):
             self.last_data_snapshot = data
 
         print(self.twenty_eighty(data))
-
 
         if not self.quiet:
             self.generate_bar_graph(data)
