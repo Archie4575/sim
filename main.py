@@ -9,8 +9,7 @@ License: GNU GPL
 
 from math import sqrt
 import random
-#SEED = "naughty"
-SEED = "naughtier"
+SEED = "naughty"
 random.seed(a = SEED, version=2)  # For Reproducability while bug-fixing
 import os
 import mathutils
@@ -648,7 +647,10 @@ class Sim(arcade.Window):
     def exit(self):
         self.close()
         arcade.exit()
-        self.print_stats()
+        if Kinder.mode == Kinder.MODES['nap_time']:
+            self.print_last_stats()
+        else:
+            self.print_stats()
 
     def on_draw(self):
         """Draw function"""

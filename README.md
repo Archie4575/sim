@@ -10,7 +10,7 @@ A simulation of kindergarten kids running around a classroom and picking up bloc
 The simulation has, again, modes:  
 - Block Surplus - Kindergarteners meander and collect blocks upon collision  
 - Block Saturation - Kindergarteners start to contest ecah other and snatch each others' blocks when all blocks have been collected. The snatching mechhanism dictates that both the chance of a kindergartener winning the contest and the gain in blocks as a result of a win depends on its proportion of the total blocks between the two. In essence, the more blocks a kinder has, the greater their expected gain from an interaction. The mathematics of this is elaborated on further in the report.
-- Nap Time - Kindergarteners drop their blocks on the floor and find a grid squaure on the edge to nap on. Statistics are also printed
+- Nap Time - Kindergarteners drop their blocks on the floor and find a grid squaure on the edge to nap on. Statistics are also printed and graphs are saved to `./output/`
 
 This is designed to simulate a closed system of inequal distribution where the rich get richer while the poor stay poor, and should, if ran long enough, produce a Pareto distribution of blocks in which the top 20% of kinders have accumulated approximately 80% of the blocks. To test this, statistics about the distribution of wealth are printed to standard out every time the nap-time is entered or when the user quits.
 
@@ -56,6 +56,7 @@ Example: Spawns 15 Kindergarteners and 110 blocks and runs for 40 seconds.
 Keys:
 - `q` - Stop the simluation and print statistics
 - `SPACE` - Pause the simulation
+- `n` - Toggle Naptime
 
 ## Content
 
@@ -99,3 +100,4 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.8.1 - 18/05/2022 - Changed snatch mechanics  
 0.9.0 - 19/05/2022 - HUD implemented
 3.0.0 - 19/05/2022 - Napping implemented
+3.0.1 - 20/05/2022 - Bug fixes and the addition of Krystey (credit: my 7yo sister)
