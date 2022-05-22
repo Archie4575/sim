@@ -20,10 +20,10 @@ Clone the repository:
 >`git clone https://github.com/Archie4575/sim.git`  
 >`cd sim`  
 
-Install the packages on Linux and Windwos:  
+Install the packages on Linux and Windows:  
 >`python3 -m pip install -r requirements.txt`  
 
-Or if using MacOS:  
+Install the packages on MacOS:  
 >`python3 -m pip install -r requirements_macos.txt`  
 
 ## Usage
@@ -101,3 +101,4 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.9.0 - 19/05/2022 - HUD implemented  
 3.0.0 - 19/05/2022 - Napping implemented  
 3.0.1 - 20/05/2022 - Bug fixes and the addition of Krystey (credit: my 7yo sister)  
+3.0.2 - 22/05/2022 - Changed function of --quiet flag

@@ -3,7 +3,7 @@
 Kinderdrome Simulation GUI
 
 Author: Archer Fabling
-Version: 0.9.1
+Version: 3.0.2
 License: GNU GPL
 """
 
@@ -712,8 +712,7 @@ class Sim(arcade.Window):
 
         print(self.twenty_eighty(data))
 
-        if not self.quiet:
-            self.generate_bar_graph(data)
+        self.generate_bar_graph(data, self.quiet)
         
     def print_last_stats(self):
         if self.last_data_snapshot:
@@ -721,7 +720,7 @@ class Sim(arcade.Window):
         else:
             self.print_stats()
 
-    def generate_bar_graph(self, data: dict):
+    def generate_bar_graph(self, data: dict, quiet: bool = False):
         """Generates a bar graph with Kinder IDs along the x-axis and their respective score on the y-axis.
         
         :param dict data: data in dictionary form
@@ -744,7 +743,8 @@ class Sim(arcade.Window):
             plt.xlabel("Rank")
             plt.title(title)
             plt.savefig(f"output/{filename}")
-            plt.show()
+            if not quiet:
+                plt.show()
 
     def twenty_eighty(self, data: dict):
         sorted_items = list(sorted(data.items(), key = lambda item: -item[1]))  # Sorts items by value
