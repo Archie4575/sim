@@ -98,6 +98,6 @@ Found in `requirements.txt` (or `requirements_macos.txt` for Mac users)
 0.7.1 - 18/05/2022 - Updated README  
 0.8.0 - 18/05/2022 - Statistics implemented  
 0.8.1 - 18/05/2022 - Changed snatch mechanics  
-0.9.0 - 19/05/2022 - HUD implemented
-3.0.0 - 19/05/2022 - Napping implemented
-3.0.1 - 20/05/2022 - Bug fixes and the addition of Krystey (credit: my 7yo sister)
+0.9.0 - 19/05/2022 - HUD implemented  
+3.0.0 - 19/05/2022 - Napping implemented  
+3.0.1 - 20/05/2022 - Bug fixes and the addition of Krystey (credit: my 7yo sister)  
