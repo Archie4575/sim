@@ -35,12 +35,15 @@ class Grid (arcade.Sprite):
     """Grid class. A static background sprite that has a matrix of cells containing the Kinder objects currently
     in said grid area. i.e. If two Kinder objects has center_x and center_y coordinates that lie within the same
     grid area, their objects will be in the same matrix cell. This is useful for initialising a contest for
-    mode 1 (block saturation).
+    mode 1 (block saturation). This is done by checking for two valid Kinder in a each cell every frame in
+    Grid.update() and making said Kinder contest each other.
  
-    :param int rows: numbers of rows
-    :param int columns: number of columns
+    :param int rows: numbers of rows. default=9
+    :param int columns: number of columns. default=16
 
-    Attributes:
+    Instance Variables:
+        :rows: number of rows
+        :columns: number of columns
         :matrix: matrix of cells containing Kinder objects
         :division: side length of one grid square in pixels
     """
@@ -100,8 +103,13 @@ class Grid (arcade.Sprite):
 class Block (arcade.Sprite):
     """Block class. Spawned on at a random position on the ground and is collected by Kinder.
     
-    Attributes:
-        :Kinder owner: Defaults to none, changes when block is picked up."""
+    Class Variables:
+        :block_count: number of blocks left on the ground
+        :BMARGIN: margin in which the blocks cannot spawn at generation
+
+    Instance Variables:
+        :owner: Defaults to none, changes when block is picked up.
+    """
     block_count = 0 # Number of blocks on the ground
     BMARGIN = 50
 
@@ -123,7 +131,13 @@ class Block (arcade.Sprite):
 
 
 class Bed (arcade.Sprite):
-    """Bed class.""" 
+    """Bed class. Spawns at the centre of a given row and column.
+    Has two textures: ['images/vacant_bed.png', 'images/full_bed.png']
+    
+    Instance Variables:
+        :isFull: boolean, defaults to False. Causes update to remove
+            itself from Sim.available_bed_list if True
+    """ 
     def __init__(self, row, col):
         super().__init__(abs_path("images/vacant_bed.png"), scale = 1)
         self.textures.append(arcade.load_texture("images/vacant_bed.png",
@@ -154,14 +168,29 @@ class Kinder (arcade.Sprite):
     :param str spritefile: absolute path to sprite image
     :param float scaling: sprite scale factor
 
-    Attributes:
+
+    Class Variables:
+        :mode: integer mode 0-2
+        :MODES: dictionary of modes
+        :count: count of total number of Kinder objects
+        :grid: Grid() object, starts as None, initialised upon first Kinder.__init__()
+
+    Instance Variables:
+        :_id: integer id
         :velocity: rectangular vector of floats
         :traj_vel: intial velocity and the direction from which the velocity deviates
         :traj_dir: angle of the traj_vel
         :speed: number of pixels moved every update
-        :run_timer: framecount timer for running from boundaries
         :perlin: perlin noise generator
         :t: starting value for perlin noise generator
+        :inContest: boolean, in contest?
+        :contest_timer: framecounter for contest
+        :blocks: list of blocks objects accumulated
+        :score: number of blocks accumulated
+        :isSnatcher: set in Kinder.contest()
+        :last_contested: last contested Kinder
+        :label: ScoreLabel object
+        :isAsleep: boolean, in bed?
     """
 
     mode = 0
@@ -173,7 +202,6 @@ class Kinder (arcade.Sprite):
 
     count = 0
     grid = None
-    snatch_amount = 2
 
     def __init__(self, spritefile = "images/dummy.png", scaling = 1):
         """Constructor"""
@@ -439,10 +467,13 @@ class ScoreLabel ():
     
     :param Kinder parent: Kinder that this label pertains to
     
-    Attributes:
+    Class Variables:
+        :font_file: absolute path to font file
         :digit_width: pixel width of digits in font file
         :digit_height: pixel height of digits in font file
-        :parent: parent sprite
+    
+    Instance Variables:
+        :parent: parent sprite that it must position itself over
         :digit_sprites: SpriteList of Digit objects
         :score: alias for the parent Kinder's score
         :_lastscore: used to detect frame by frame changes to the score
@@ -511,7 +542,14 @@ class Digit (arcade.Sprite):
 
 
 class HUD (arcade.Sprite):
-    """Heads Up Display. Overalay to show controls."""
+    """Heads Up Display. Overalay to show controls.
+    Update function toggles between paused and unpaused state.
+    
+    Instance Variables:
+        :pause: boolean, is paused ?
+        :textures: list of two textures:
+            ["images/HUD.png", "images/HUDP.png"]
+    """
 
     def __init__(self):
         starter_hud = abs_path("images/HUD.png")
@@ -542,13 +580,33 @@ class HUD (arcade.Sprite):
 class Sim(arcade.Window):
     """Main Simulation Class
 
-    :param int width: Window width
-    :param int height: Window hieght
-    :param str title: Window title
+    :param NameSpace args: command line arguments from ArgParser.parse_args
 
-    Attributes:
+    Class Variables:
         :kinder_list: SpriteList of Kinder objects
         :block_list: SpriteList of Block objects
+        :bed_list: SpriteList of Bed objects 
+        :available_bed_list: SpriteList of available Bed objects
+        :last_num_beds: Number of available beds last frame
+        :num_beds: Number of available beds this frame
+
+        :SCREEN_TITLE: Window title
+        :SCREEN_WIDTH: Window width
+        :SCREEN_HEIGHT: Window height
+        :MARGIN: Margin that Kinder can't pass
+        :FPS: Max refresh rate
+        :framecount: increments every frame
+
+        :data_snapshots: dictionary of the form framecount: {data}
+        :last_data_snapshot: the last data snapshot added to data_snapshots
+
+    Instance Variables:
+        :numkinder: from args
+        :numblocks: from args
+        :runtime: from args
+        :quiet: from args
+        :paused: boolean
+        :hud: Heads-up-display, HUD object
     """
 
     blocks_list = arcade.SpriteList()
