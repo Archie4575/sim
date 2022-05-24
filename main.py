@@ -384,7 +384,11 @@ class Kinder (arcade.Sprite):
         for block in self.blocks:
             self.score -= 1
             block.owner = None
-            block.position = mathutils.rand_point_in_circle(center = self.position, radius = self.grid.division)
+            while True:
+                new_block_pos = mathutils.rand_point_in_circle(center = self.position, radius = self.grid.division)
+                if mathutils.inBounds(new_block_pos, (Sim.SCREEN_WIDTH, Sim.SCREEN_HEIGHT), Sim.MARGIN): break
+                
+
             Sim.blocks_list.append(block)
             Block.block_count += 1
         self.blocks.clear()
@@ -393,7 +397,6 @@ class Kinder (arcade.Sprite):
     def take_bed(self, bed):
         bed.isFull = True
         Sim.available_bed_list.remove(bed)
-        Sim.num_beds -= 1
         self.isAsleep = True
         self.velocity = (0,0)
         self.position = bed.position
@@ -690,10 +693,7 @@ class Sim(arcade.Window):
                 self.last_data_snapshot = self.data_snapshots[self.framecount]
                 for kinder in self.kinder_list:
                     kinder.drop_blocks()
-                    print("dropping")
-                print("printing")
                 self.print_last_stats()
-                print("printed")
 
     def pause(self):
         self.paused = not self.paused
@@ -745,7 +745,6 @@ class Sim(arcade.Window):
                 bed = Bed(row, col)
                 self.bed_list.append(bed)
                 self.available_bed_list.append(bed)
-                self.num_beds += 1
         
         # Then top
         for row in [0,8]:
@@ -754,7 +753,10 @@ class Sim(arcade.Window):
                 bed = Bed(row, col)
                 self.bed_list.append(bed)
                 self.available_bed_list.append(bed)
-                self.num_beds += 1
+    
+    @property
+    def num_beds(self):
+        return len(self.available_bed_list)
 
     def get_data(self):
         if self.kinder_list:
@@ -802,6 +804,8 @@ class Sim(arcade.Window):
             plt.title(title)
             plt.savefig(f"output/{filename}")
             if not quiet:
+                from matplotlib import use
+                use('TkAgg')
                 plt.show()
 
     def twenty_eighty(self, data: dict):

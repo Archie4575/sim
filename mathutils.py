@@ -73,6 +73,13 @@ def rand_point_in_circle(center, radius):
 
     return point
 
+def inBounds(pos, bounds, margin = 0):
+    result = pos[0] > margin and \
+            pos[0] < bounds[0] - margin and \
+            pos[1] > margin and \
+            pos[1] < bounds[1] - margin
+    return result
+     
 
 if __name__ == '__main__':
     ### Testing rand_direction()
